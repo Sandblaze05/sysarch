@@ -67,7 +67,7 @@ const Navbar = () => {
   return (
     <div
       ref={navRef}
-      className='relative z-999 h-8 sm:h-10 px-1 py-1 border-2 border-white/20 rounded-full mt-5 flex items-center justify-around gap-2 sm:gap-8'
+      className='relative z-999 h-8 sm:h-10 px-1 py-1 border-2 border-white/20 bg-[#171717]/50 backdrop-blur-md rounded-full mt-5 flex items-center justify-around gap-2 sm:gap-8'
     >
       <div
         ref={pillRef}
