@@ -70,7 +70,7 @@ const Panel = () => {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handlePanelClick}
-      className={`fixed flex flex-col p-5 z-50 top-1/2 -translate-y-1/2 left-6 h-130 w-90 bg-[#171717]/80 backdrop-blur-md border border-white/15 rounded-2xl shadow-2xl transition-shadow duration-300 select-none ${
+      className={`fixed flex flex-col p-5 z-50 top-1/2 -translate-y-1/2 left-6 h-130 w-90 bg-black/80 backdrop-blur-md border border-white/15 rounded-2xl shadow-2xl transition-shadow duration-300 select-none ${
         !isPanelOpen ? 'cursor-pointer hover:border-white/30' : ''
       }`}
     >

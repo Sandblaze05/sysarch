@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "@xyflow/react": "^12.11.2",
+    "clsx": "^2.1.1",
     "gsap": "^3.15.0",
     "lucide-react": "^1.26.0",
+    "motion": "^12.42.2",
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "tailwind-merge": "^3.6.0",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

@@ -3,6 +3,9 @@
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Features } from "@/components/Features";
+import FeyCards from "@/components/FeyCards";
+import CompanyMarquee from "@/components/CompanyMarquee";
 import Loader from "@/components/Loader";
 import {
   IDLE_SETTLE_DELAY_MS,
@@ -15,7 +18,7 @@ import {
 const VIDEO_SRC = "/hero.mp4";
 
 export default function HomeHero() {
-  const titleWords = "Master the Architecture of Scale.".split(" ");
+  const titleWords = "Master Architecture of Scale.".split(" ");
   const sectionRef = useRef<HTMLElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const loaderReleaseRef = useRef<number | undefined>(undefined);
@@ -88,10 +91,10 @@ export default function HomeHero() {
   }, []);
 
   return (
-    <main className="min-h-screen w-full bg-[#171717]">
+    <main className="min-h-screen w-full bg-black">
       <div
         aria-hidden={!isLoading}
-        className={`site-loader fixed inset-0 z-1000 flex items-center justify-center bg-[#171717] transition-[opacity,visibility] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isLoading ? "opacity-100 visible" : "pointer-events-none invisible opacity-0"
+        className={`site-loader fixed inset-0 z-1000 flex items-center justify-center bg-black transition-[opacity,visibility] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isLoading ? "opacity-100 visible" : "pointer-events-none invisible opacity-0"
           }`}
       >
         <Loader />
@@ -156,9 +159,15 @@ export default function HomeHero() {
         </div>
       </section>
 
-      <section className="min-h-screen">
+      <CompanyMarquee />
 
+      <Features />
+
+      <section aria-label="Featured system design cards">
+        <FeyCards />
       </section>
+
+      
     </main>
   );
 }
