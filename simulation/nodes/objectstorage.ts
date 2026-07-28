@@ -1,0 +1,65 @@
+import { EventType, NodeCategory, NodeDefinition, PortDirection, PortSide } from "@/types/node";
+import { HardDrive } from "lucide-react";
+
+export const objectStorageNode: NodeDefinition = {
+    type: "object_storage",
+
+    label: "Object Storage",
+
+    category: NodeCategory.STORAGE,
+
+    icon: HardDrive,
+
+    description: "Persistent cloud-scale storage designed to store and retrieve large volumes of unstructured data.",
+
+    inputs: [
+        {
+            id: "in",
+            label: "HTTP",
+            side: PortSide.LEFT,
+            direction: PortDirection.INPUT,
+            accepts: [EventType.HTTP_REQUEST],
+        },
+    ],
+
+    outputs: [
+        {
+            id: "out",
+            label: "HTTP",
+            side: PortSide.RIGHT,
+            direction: PortDirection.OUTPUT,
+            emits: [EventType.HTTP_RESPONSE],
+        },
+    ],
+
+    config: [
+        {
+            key: "versioning",
+            label: "Enable Versioning",
+            type: "boolean",
+            defaultValue: false,
+        },
+        {
+            key: "storageClass",
+            label: "Storage Class",
+            type: "select",
+            defaultValue: "standard",
+            options: ["standard", "infrequent_access", "archive"],
+        },
+        {
+            key: "latency",
+            label: "Latency (ms)",
+            type: "number",
+            defaultValue: 15,
+            min: 0,
+        },
+    ],
+
+    simulate(node, event, context) {
+        return [event];
+    },
+
+    validate(node) {
+        return [];
+    },
+}
