@@ -15,6 +15,16 @@ export enum NodeCategory {
     EXTERNAL = "external",
 }
 
+export enum EventType {
+    HTTP_REQUEST = "http_request",
+    HTTP_RESPONSE = "http_response",
+    CACHE_LOOKUP = "cache_lookup",
+    CACHE_HIT = "cache_hit",
+    CACHE_MISS = "cache_miss",
+    DATABASE_READ = "database_read",
+    DATABASE_WRITE = "database_write",
+}
+
 export enum PortSide {
     LEFT = "left",
     RIGHT = "right",
@@ -34,8 +44,8 @@ interface PortDefinition {
     side: PortSide
     direction: PortDirection
 
-    accepts?: string[]
-    emits?: string[]
+    accepts?: EventType[]
+    emits?: EventType[]
 
     multipleConnections?: boolean
 }
@@ -63,7 +73,7 @@ export interface ConfigField {
 export interface SimulationEvent {
     id: string
 
-    type: string
+    type: EventType
 
     source: string
     target?: string
@@ -100,7 +110,7 @@ export interface NodeInstance {
 export interface NodeDefinition {
     type: string
     label: string
-    icon: ComponentType
+    icon: ComponentType<{ className?: string }>
 
     category: NodeCategory
 
