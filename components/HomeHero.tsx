@@ -2,6 +2,7 @@
 
 import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import Loader from "@/components/Loader";
 import {
   IDLE_SETTLE_DELAY_MS,
@@ -11,8 +12,7 @@ import {
   getVideoTransform,
 } from "@/components/homeHeroMotion.mjs";
 
-const VIDEO_SRC =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260405_170732_8a9ccda6-5cff-4628-b164-059c500a2b41.mp4";
+const VIDEO_SRC = "/hero.mp4";
 
 export default function HomeHero() {
   const titleWords = "Master the Architecture of Scale.".split(" ");
@@ -91,9 +91,8 @@ export default function HomeHero() {
     <main className="min-h-screen w-full bg-[#171717]">
       <div
         aria-hidden={!isLoading}
-        className={`site-loader fixed inset-0 z-[1000] flex items-center justify-center bg-[#171717] transition-[opacity,visibility] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isLoading ? "opacity-100 visible" : "pointer-events-none invisible opacity-0"
-        }`}
+        className={`site-loader fixed inset-0 z-1000 flex items-center justify-center bg-[#171717] transition-[opacity,visibility] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isLoading ? "opacity-100 visible" : "pointer-events-none invisible opacity-0"
+          }`}
       >
         <Loader />
       </div>
@@ -116,7 +115,7 @@ export default function HomeHero() {
         />
 
         <div className="hero-noise pointer-events-none absolute inset-0 opacity-70 mix-blend-overlay" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-black/75" />
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-black/35 via-black/10 to-black/75" />
 
         <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-5 pt-28 sm:px-6 md:px-10 md:pb-8">
           <div className="grid grid-cols-12 items-end gap-5">
@@ -135,14 +134,14 @@ export default function HomeHero() {
               </h1>
             </div>
 
-            <div className="col-span-12 flex max-w-xl flex-col items-start gap-5 pb-1 lg:col-span-4 lg:pb-5">
+            <div className="col-span-12 flex max-w-xl flex-col items-start gap-5 pt-1 lg:col-span-4 lg:pb-5">
               <p className="hero-fade-up text-sm leading-snug text-[#E1E0CC]/80 sm:text-base md:text-lg">
                 Learn system design through visual architecture maps, realistic
                 problems, and guided patterns built for engineers preparing to
                 design at scale.
               </p>
 
-              <a
+              <Link
                 href="/playground"
                 className="hero-fade-up group inline-flex items-center gap-2 rounded-full bg-[#E1E0CC] py-1 pl-5 pr-1 text-sm font-semibold text-black transition-all hover:gap-3 sm:text-base"
                 style={{ animationDelay: "620ms" }}
@@ -151,10 +150,14 @@ export default function HomeHero() {
                 <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black transition-transform group-hover:scale-105 sm:h-10 sm:w-10">
                   <ArrowRight className="h-4 w-4 text-[#E1E0CC]" />
                 </span>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="min-h-screen">
+
       </section>
     </main>
   );
