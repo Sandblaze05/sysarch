@@ -18,7 +18,7 @@ export const externalApiNode: NodeDefinition = {
             label: "HTTP",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.HTTP_REQUEST],
+            accepts: [EventType.EXTERNAL_REQUEST],
         },
     ],
 
@@ -28,7 +28,7 @@ export const externalApiNode: NodeDefinition = {
             label: "HTTP",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.HTTP_RESPONSE],
+            emits: [EventType.EXTERNAL_RESPONSE],
         },
     ],
 

@@ -3,25 +3,13 @@ import gsap from 'gsap';
 import { nodeRegistry } from '@/registry';
 import { NodeCategory, NodeDefinition } from '@/types/node';
 import { useFlowStore } from '@/store/flowStore';
+import { CATEGORY_META, DEFAULT_CATEGORY_META } from '@/constants/categoryMeta';
 import {
   Search,
   ChevronDown,
   ChevronRight,
   Plus,
   GripVertical,
-  MonitorSmartphone,
-  Network,
-  Shield,
-  Server,
-  Cpu,
-  Zap,
-  Database as DatabaseIcon,
-  Layers,
-  HardDrive,
-  Activity,
-  Bot,
-  ExternalLink,
-  Boxes,
   X,
 } from 'lucide-react';
 
@@ -31,84 +19,7 @@ const POSITIONS = {
   hover: -285,   // Smooth 25px preview slide on hover when closed
 };
 
-// Category Metadata: Labels, Icons, and Accent Colors
-const CATEGORY_META: Record<
-  NodeCategory,
-  { label: string; icon: React.ComponentType<{ className?: string }>; color: string; bg: string }
-> = {
-  [NodeCategory.CLIENT]: {
-    label: 'Clients',
-    icon: MonitorSmartphone,
-    color: 'text-sky-400',
-    bg: 'bg-sky-500/10 border-sky-500/20 text-sky-400',
-  },
-  [NodeCategory.NETWORK]: {
-    label: 'Network & Routing',
-    icon: Network,
-    color: 'text-indigo-400',
-    bg: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400',
-  },
-  [NodeCategory.SECURITY]: {
-    label: 'Security',
-    icon: Shield,
-    color: 'text-rose-400',
-    bg: 'bg-rose-500/10 border-rose-500/20 text-rose-400',
-  },
-  [NodeCategory.SERVICE]: {
-    label: 'Services & APIs',
-    icon: Server,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400',
-  },
-  [NodeCategory.COMPUTE]: {
-    label: 'Compute & Workers',
-    icon: Cpu,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-  },
-  [NodeCategory.CACHE]: {
-    label: 'Caching',
-    icon: Zap,
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400',
-  },
-  [NodeCategory.DATABASE]: {
-    label: 'Databases',
-    icon: DatabaseIcon,
-    color: 'text-cyan-400',
-    bg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400',
-  },
-  [NodeCategory.MESSAGE_QUEUE]: {
-    label: 'Messaging & Queues',
-    icon: Layers,
-    color: 'text-fuchsia-400',
-    bg: 'bg-fuchsia-500/10 border-fuchsia-500/20 text-fuchsia-400',
-  },
-  [NodeCategory.STORAGE]: {
-    label: 'Object Storage',
-    icon: HardDrive,
-    color: 'text-teal-400',
-    bg: 'bg-teal-500/10 border-teal-500/20 text-teal-400',
-  },
-  [NodeCategory.MONITORING]: {
-    label: 'Monitoring & Logs',
-    icon: Activity,
-    color: 'text-purple-400',
-    bg: 'bg-purple-500/10 border-purple-500/20 text-purple-400',
-  },
-  [NodeCategory.AI]: {
-    label: 'AI & Intelligence',
-    icon: Bot,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
-  },
-  [NodeCategory.EXTERNAL]: {
-    label: 'External Services',
-    icon: ExternalLink,
-    color: 'text-zinc-400',
-    bg: 'bg-zinc-500/10 border-zinc-500/20 text-zinc-400',
-  },
-};
+
 
 const Panel = () => {
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
@@ -286,12 +197,7 @@ const Panel = () => {
         ) : (
           (Object.entries(nodesByCategory) as [NodeCategory, NodeDefinition[]][]).map(
             ([category, categoryNodes]) => {
-              const meta = CATEGORY_META[category] || {
-                label: category,
-                icon: Boxes,
-                color: 'text-neutral-400',
-                bg: 'bg-neutral-800 text-neutral-400 border-neutral-700',
-              };
+              const meta = CATEGORY_META[category] || DEFAULT_CATEGORY_META;
               const CategoryIcon = meta.icon;
               const isCollapsed = collapsedCategories[category];
 
@@ -336,7 +242,7 @@ const Panel = () => {
                               <GripVertical className="w-3 h-3 text-neutral-600 group-hover:text-neutral-400 shrink-0" />
                               {IconComponent && (
                                 <div
-                                  className={`p-1 rounded-lg border shrink-0 ${meta.bg}`}
+                                  className={`p-1 rounded-lg border shrink-0 ${meta.badgeBg}`}
                                 >
                                   <IconComponent className="w-3.5 h-3.5" />
                                 </div>
@@ -346,7 +252,7 @@ const Panel = () => {
                                   {node.label}
                                 </h4>
                                 {node.description && (
-                                  <p className="text-[10px] text-neutral-500 truncate max-w-[170px]">
+                                  <p className="text-[10px] text-neutral-500 truncate max-w-42.5">
                                     {node.description}
                                   </p>
                                 )}

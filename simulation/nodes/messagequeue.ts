@@ -18,7 +18,7 @@ export const messageQueueNode: NodeDefinition = {
             label: "Publish",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.HTTP_REQUEST],
+            accepts: [EventType.QUEUE_PUBLISH],
         },
     ],
 
@@ -28,7 +28,7 @@ export const messageQueueNode: NodeDefinition = {
             label: "Consume",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.HTTP_REQUEST],
+            emits: [EventType.QUEUE_CONSUME],
         },
     ],
 

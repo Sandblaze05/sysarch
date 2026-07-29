@@ -18,7 +18,7 @@ export const serviceNode: NodeDefinition = {
             label: "HTTP",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.HTTP_REQUEST],
+            accepts: [EventType.HTTP_REQUEST, EventType.DATABASE_RESPONSE, EventType.CACHE_HIT, EventType.CACHE_MISS, EventType.QUEUE_CONSUME, EventType.EXTERNAL_RESPONSE, EventType.FILE_DOWNLOAD],
         },
     ],
 
@@ -28,7 +28,7 @@ export const serviceNode: NodeDefinition = {
             label: "HTTP/Database/Cache",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.HTTP_REQUEST, EventType.HTTP_RESPONSE, EventType.CACHE_LOOKUP, EventType.DATABASE_READ, EventType.DATABASE_WRITE],
+            emits: [EventType.HTTP_RESPONSE, EventType.CACHE_READ, EventType.CACHE_WRITE, EventType.DATABASE_READ, EventType.DATABASE_WRITE, EventType.QUEUE_PUBLISH, EventType.EXTERNAL_REQUEST, EventType.FILE_UPLOAD, EventType.FILE_DOWNLOAD, EventType.METRIC, EventType.ERROR],
         },
     ],
 

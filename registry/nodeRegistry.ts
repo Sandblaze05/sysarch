@@ -1,4 +1,4 @@
-import { NodeDefinition, NodeCategory } from '@/types/node'
+import { NodeDefinition, NodeCategory, PortDirection } from '@/types/node'
 
 class NodeRegistry {
     private definitions = new Map<string, NodeDefinition>();
@@ -27,6 +27,52 @@ class NodeRegistry {
 
     has(type: string) {
         return this.definitions.has(type);
+    }
+
+    /**
+     * Returns true if the source node's output port can connect to the
+     * target node's input port, based on their declared emits/accepts sets.
+     *
+     * A connection is valid when:
+     *   - The source output port emits at least one EventType that the
+     *     target input port accepts.
+     *   - OR either side has no event constraints declared (permissive fallback).
+     *
+     * A connection is always invalid when source === target (self-loop).
+     */
+    canConnect(
+        sourceNodeType: string,
+        sourceHandleId: string | null,
+        targetNodeType: string,
+        targetHandleId: string | null,
+    ): boolean {
+        // Prevent self-loops
+        if (sourceNodeType === targetNodeType) return false;
+
+        const sourceDef = this.definitions.get(sourceNodeType);
+        const targetDef = this.definitions.get(targetNodeType);
+
+        // Unknown node type — allow (don't block unregistered nodes)
+        if (!sourceDef || !targetDef) return true;
+
+        // Find the specific output port on the source
+        const outputPort = sourceHandleId
+            ? sourceDef.outputs.find((p) => p.id === sourceHandleId)
+            : sourceDef.outputs[0];
+
+        // Find the specific input port on the target
+        const inputPort = targetHandleId
+            ? targetDef.inputs.find(
+                (p) => p.id === targetHandleId && p.direction === PortDirection.INPUT,
+              )
+            : targetDef.inputs[0];
+
+        // If either port is missing or has no event constraints, be permissive
+        if (!outputPort || !inputPort) return true;
+        if (!outputPort.emits?.length || !inputPort.accepts?.length) return true;
+
+        // Core check: do the sets intersect?
+        return outputPort.emits.some((event) => inputPort.accepts!.includes(event));
     }
 }
 

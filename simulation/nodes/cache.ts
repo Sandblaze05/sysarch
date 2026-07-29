@@ -18,7 +18,7 @@ export const cacheNode: NodeDefinition = {
             label: "Lookup",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.CACHE_LOOKUP],
+            accepts: [EventType.CACHE_READ, EventType.CACHE_WRITE],
         },
     ],
 
@@ -28,7 +28,7 @@ export const cacheNode: NodeDefinition = {
             label: "Result",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.CACHE_HIT, EventType.CACHE_MISS, EventType.HTTP_RESPONSE],
+            emits: [EventType.CACHE_HIT, EventType.CACHE_MISS],
         },
     ],
 

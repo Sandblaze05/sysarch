@@ -28,36 +28,48 @@ export const apiGatewayNode: NodeDefinition = {
             label: "HTTP",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.HTTP_REQUEST],
+            emits: [EventType.HTTP_REQUEST, EventType.HTTP_RESPONSE, EventType.ERROR],
         },
     ],
 
     config: [
         {
+            key: "algorithm",
+            label: "Algorithm",
+            type: "select",
+            defaultValue: "round_robin",
+            options: [
+                "round_robin",
+                "least_connections",
+                "ip_hash",
+                "random"
+            ],
+        },
+        {
+            key: "latency",
+            label: "Latency (ms)",
+            type: "number",
+            defaultValue: 2,
+            min: 0,
+        },
+        {
+            key: "rateLimit",
+            label: "Rate Limit",
+            type: "number",
+            defaultValue: 1000,
+            min: 1,
+        },
+        {
             key: "rateLimiting",
             label: "Enable Rate Limiting",
             type: "boolean",
-            defaultValue: false,
-        },
-        {
-            key: "rateLimitRps",
-            label: "Max Requests / Sec",
-            type: "number",
-            defaultValue: 100,
-            min: 1,
+            defaultValue: true,
         },
         {
             key: "authEnabled",
             label: "Enable Authentication",
             type: "boolean",
             defaultValue: false,
-        },
-        {
-            key: "latency",
-            label: "Latency (ms)",
-            type: "number",
-            defaultValue: 5,
-            min: 0,
         },
     ],
 

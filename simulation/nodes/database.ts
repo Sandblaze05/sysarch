@@ -28,7 +28,7 @@ export const databaseNode: NodeDefinition = {
             label: "Response",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.HTTP_RESPONSE],
+            emits: [EventType.DATABASE_RESPONSE],
         },
     ],
 

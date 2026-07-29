@@ -18,7 +18,7 @@ export const objectStorageNode: NodeDefinition = {
             label: "HTTP",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.HTTP_REQUEST],
+            accepts: [EventType.FILE_UPLOAD, EventType.FILE_DOWNLOAD],
         },
     ],
 
@@ -28,7 +28,7 @@ export const objectStorageNode: NodeDefinition = {
             label: "HTTP",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.HTTP_RESPONSE],
+            emits: [EventType.FILE_DOWNLOAD],
         },
     ],
 

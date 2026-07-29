@@ -16,13 +16,30 @@ export enum NodeCategory {
 }
 
 export enum EventType {
-    HTTP_REQUEST = "http_request",
-    HTTP_RESPONSE = "http_response",
-    CACHE_LOOKUP = "cache_lookup",
-    CACHE_HIT = "cache_hit",
-    CACHE_MISS = "cache_miss",
-    DATABASE_READ = "database_read",
-    DATABASE_WRITE = "database_write",
+  HTTP_REQUEST = "http_request",
+  HTTP_RESPONSE = "http_response",
+
+  CACHE_READ = "cache_read",
+  CACHE_HIT = "cache_hit",
+  CACHE_MISS = "cache_miss",
+  CACHE_WRITE = "cache_write",
+
+  DATABASE_READ = "database_read",
+  DATABASE_WRITE = "database_write",
+  DATABASE_RESPONSE = "database_response",
+
+  QUEUE_PUBLISH = "queue_publish",
+  QUEUE_CONSUME = "queue_consume",
+
+  FILE_UPLOAD = "file_upload",
+  FILE_DOWNLOAD = "file_download",
+
+  EXTERNAL_REQUEST = "external_request",
+  EXTERNAL_RESPONSE = "external_response",
+
+  METRIC = "metric",
+
+  ERROR = "error",
 }
 
 export enum PortSide {

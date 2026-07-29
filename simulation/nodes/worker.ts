@@ -18,7 +18,7 @@ export const workerNode: NodeDefinition = {
             label: "Task",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.HTTP_REQUEST],
+            accepts: [EventType.QUEUE_CONSUME],
         },
     ],
 
@@ -28,7 +28,7 @@ export const workerNode: NodeDefinition = {
             label: "Result",
             side: PortSide.RIGHT,
             direction: PortDirection.OUTPUT,
-            emits: [EventType.DATABASE_WRITE, EventType.HTTP_RESPONSE],
+            emits: [EventType.DATABASE_WRITE, EventType.DATABASE_READ, EventType.CACHE_WRITE, EventType.FILE_UPLOAD, EventType.EXTERNAL_REQUEST, EventType.METRIC, EventType.ERROR],
         },
     ],
 

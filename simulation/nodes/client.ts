@@ -12,7 +12,15 @@ export const clientNode: NodeDefinition = {
 
     description: "Represents a user or application sending request",
 
-    inputs: [],
+    inputs: [
+        {
+            id: "http",
+            label: "HTTP",
+            side: PortSide.BOTTOM,
+            direction: PortDirection.INPUT,
+            accepts: [EventType.HTTP_RESPONSE]
+        }
+    ],
     outputs: [
         {
             id: "http",

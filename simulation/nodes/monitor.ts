@@ -18,7 +18,7 @@ export const monitorNode: NodeDefinition = {
             label: "Metrics",
             side: PortSide.LEFT,
             direction: PortDirection.INPUT,
-            accepts: [EventType.HTTP_REQUEST, EventType.HTTP_RESPONSE],
+            accepts: [EventType.METRIC, EventType.ERROR],
         },
     ],
 
