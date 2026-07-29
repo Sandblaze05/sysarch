@@ -165,3 +165,16 @@ body {
     transform: translateX(-50%);
   }
 }
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical 30s linear infinite;
+}

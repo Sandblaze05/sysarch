@@ -4,7 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Features } from "@/components/Features";
-import FeyCards from "@/components/FeyCards";
+import { ContainerScroll } from "@/components/ui/container-scroll";
+import { TextReveal } from "@/components/ui/text-reveal";
 import CompanyMarquee from "@/components/CompanyMarquee";
 import Loader from "@/components/Loader";
 import {
@@ -14,6 +15,7 @@ import {
   getVideoFilter,
   getVideoTransform,
 } from "@/components/homeHeroMotion.mjs";
+import CTAWithVerticalMarquee from "@/components/ctawithverticalmarquee";
 
 const VIDEO_SRC = "/hero.mp4";
 
@@ -163,11 +165,37 @@ export default function HomeHero() {
 
       <Features />
 
-      <section aria-label="Featured system design cards">
-        <FeyCards />
+      <section aria-label="Featured system design cards" className="-mt-4 bg-black md:-mt-8 scroll-mt-24">
+        <ContainerScroll
+          titleComponent={
+            <h2 className="text-3xl font-bold tracking-tight text-[#E1E0CC] md:text-5xl">
+              Inspired by the pros. Made for you.
+            </h2>
+          }
+        >
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="mx-auto h-full w-full rounded-2xl object-cover"
+            src="/hero.mp4"
+          />
+        </ContainerScroll>
       </section>
 
-      
+      <section aria-label="Our philosophy" className="-mt-24 md:-mt-28 bg-black">
+        <TextReveal>
+          System design is not about memorizing diagrams. It is about learning
+          to reason under pressure, weigh tradeoffs honestly, and build
+          architectures that hold up when traffic spikes, teams grow, and
+          requirements change. That is the skill Archyx helps you practice.
+        </TextReveal>
+      </section>
+
+      <section>
+        <CTAWithVerticalMarquee />
+      </section>
     </main>
   );
 }

@@ -67,16 +67,18 @@ const Inspector: React.FC = () => {
         x: 0,
         opacity: 1,
         pointerEvents: 'auto',
-        duration: 0.35,
+        duration: 0.45,
         ease: 'power3.out',
+        overwrite: 'auto',
       });
     } else {
       gsap.to(panelRef.current, {
-        x: 360,
+        x: 320,
         opacity: 0,
         pointerEvents: 'none',
-        duration: 0.35,
-        ease: 'power3.in',
+        duration: 0.45,
+        ease: 'power3.out',
+        overwrite: 'auto',
       });
     }
   }, [selectedNode]);
@@ -84,6 +86,11 @@ const Inspector: React.FC = () => {
   const handleDeleteNode = () => {
     if (!selectedNode) return;
     setNodes(nodes.filter((n) => n.id !== selectedNode.id));
+    setSelectedNodeId(null);
+  };
+
+  const handleClose = () => {
+    setNodes(useFlowStore.getState().nodes.map((n) => ({ ...n, selected: false })));
     setSelectedNodeId(null);
   };
 
@@ -103,8 +110,8 @@ const Inspector: React.FC = () => {
   return (
     <div
       ref={panelRef}
-      style={{ transform: 'translateX(360px)', opacity: 0, pointerEvents: 'none' }}
-      className="fixed right-4 top-20 bottom-6 w-80 z-50 border-2 border-white/20 bg-black/80 backdrop-blur-xl rounded-3xl p-4 flex flex-col shadow-2xl text-white select-none transition-shadow duration-300"
+    style={{ transform: 'translateX(320px)', opacity: 0, pointerEvents: 'none' }}
+    className="fixed right-4 top-2 bottom-48 w-72 z-50 border-2 border-white/20 bg-black/80 backdrop-blur-xl rounded-3xl p-4 flex flex-col shadow-2xl text-white select-none transition-shadow duration-300"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-3 shrink-0">
@@ -136,7 +143,7 @@ const Inspector: React.FC = () => {
           <button
             type="button"
             title="Close Inspector"
-            onClick={() => setSelectedNodeId(null)}
+            onClick={handleClose}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-white transition-colors"
           >
             <X className="w-4 h-4" />
