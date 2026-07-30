@@ -54,7 +54,7 @@ export function Features() {
         <section ref={sectionRef} className="bg-black py-8 md:py-14" id="features-section">
             <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
                 <div className="mx-auto mb-10 max-w-3xl text-center md:mb-14">
-                    <p className="text-sm font-semibold uppercase tracking-widest text-[#E1E0CC]/55">Why Sysarch</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-[#E1E0CC]/55">Why Archyx</p>
                     <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[#E1E0CC] md:text-5xl">
                         Everything you need to design systems at scale
                     </h2>

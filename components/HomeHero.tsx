@@ -16,6 +16,7 @@ import {
   getVideoTransform,
 } from "@/components/homeHeroMotion.mjs";
 import CTAWithVerticalMarquee from "@/components/ctawithverticalmarquee";
+import { MacbookScroll } from "./macbook-scroll";
 
 const VIDEO_SRC = "/hero.mp4";
 
@@ -165,23 +166,19 @@ export default function HomeHero() {
 
       <Features />
 
-      <section aria-label="Featured system design cards" className="-mt-4 bg-black md:-mt-8 scroll-mt-24">
-        <ContainerScroll
-          titleComponent={
-            <h2 className="text-3xl font-bold tracking-tight text-[#E1E0CC] md:text-5xl">
-              Inspired by the pros. Made for you.
-            </h2>
+      <section
+        aria-label="Featured system design cards"
+        className="relative -mt-4 overflow-hidden bg-black md:-mt-8 scroll-mt-24"
+      >
+        <MacbookScroll
+          title={
+            <span className="text-2xl font-bold text-[#E1E0CC] sm:text-3xl md:text-4xl lg:text-5xl">
+              The LeetCode for System Design.<br /> No kidding.
+            </span>
           }
-        >
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="mx-auto h-full w-full rounded-2xl object-cover"
-            src="/hero.mp4"
-          />
-        </ContainerScroll>
+          src={`/hero.mp4`}
+          showGradient={false}
+        />
       </section>
 
       <section aria-label="Our philosophy" className="-mt-24 md:-mt-28 bg-black">
