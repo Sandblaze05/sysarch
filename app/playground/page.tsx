@@ -93,6 +93,8 @@ function PlaygroundFlow() {
 
   // Registry-driven connection validation — gives visual feedback during drag
   const isValidConnection: IsValidConnection = useCallback((connection) => {
+    if (connection.source === connection.target) return false;
+
     const sourceNode = nodes.find((n) => n.id === connection.source);
     const targetNode = nodes.find((n) => n.id === connection.target);
 
@@ -157,13 +159,6 @@ function PlaygroundFlow() {
         fitView
       >
         <Background color="#333" gap={16} />
-        <Controls 
-          position="bottom-left" 
-          showZoom 
-          showFitView 
-          showInteractive 
-          orientation="vertical"
-        />
         <MiniMap
           position="bottom-right"
           nodeBorderRadius={8}
