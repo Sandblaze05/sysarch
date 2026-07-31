@@ -126,7 +126,7 @@ export default function HomeHero() {
         <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-5 pt-28 sm:px-6 md:px-10 md:pb-8">
           <div className="grid grid-cols-12 items-end gap-5">
             <div className="col-span-12 lg:col-span-8">
-              <h1 className="max-w-[11ch] text-[18vw] font-extrabold leading-[0.86] text-[#E1E0CC] sm:text-[15vw] md:text-[13vw] lg:text-[10.5vw]">
+              <h1 className="max-w-[11ch] text-[14vw] font-extrabold leading-[0.86] text-[#E1E0CC] sm:text-[13vw] md:text-[11vw] lg:text-[9vw]">
                 {titleWords.map((word, index) => (
                   <span
                     key={`${word}-${index}`}

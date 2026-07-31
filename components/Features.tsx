@@ -64,7 +64,7 @@ export function Features() {
                 </div>
                 <div className="relative">
                     <div className="relative z-10 grid grid-cols-6 gap-3">
-                        <Card ref={addToCardsRef} className="relative col-span-full flex overflow-hidden lg:col-span-2">
+                        <Card ref={addToCardsRef} className="relative col-span-full flex overflow-hidden lg:col-span-2 bg-black">
                             <CardContent className="relative m-auto size-fit pt-6">
                                 <div className="relative flex h-24 w-56 items-center">
                                     <svg className="text-muted absolute inset-0 size-full" viewBox="0 0 254 104" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -75,10 +75,10 @@ export function Features() {
                                     </svg>
                                     <span className="mx-auto block w-fit text-5xl font-semibold">10x</span>
                                 </div>
-                                <h2 className="mt-6 text-center text-3xl font-semibold">No-Code to Python</h2>
+                                <h2 className="mt-6 text-center text-3xl font-semibold">99.99 Uptime</h2>
                             </CardContent>
                         </Card>
-                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2">
+                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2 bg-black">
                             <CardContent className="pt-6">
                                 <div className="relative mx-auto flex aspect-square size-32 rounded-full border before:absolute before:-inset-2 before:rounded-full before:border dark:border-white/10 dark:before:border-white/5">
                                     <svg className="m-auto h-fit w-24" viewBox="0 0 212 143" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,12 +106,12 @@ export function Features() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-6 space-y-2 text-center">
-                                    <h2 className="group-hover:text-secondary-950 text-lg font-medium transition dark:text-white">Runtime-safe execution</h2>
-                                    <p className="text-foreground">Validate datasets, compile nodes, and execute graph steps with predictable runtime checks before deployment.</p>
+                                    <h2 className="group-hover:text-secondary-950 text-lg font-medium transition dark:text-white">Service Mesh</h2>
+                                    <p className="text-foreground">Model sidecar proxies, traffic policies, and observability across microservice boundaries with live topology maps.</p>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2">
+                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden sm:col-span-3 lg:col-span-2 bg-black">
                             <CardContent className="pt-6">
                                 <div className="pt-6 lg:px-6">
                                     <svg className="dark:text-muted-foreground w-full" viewBox="0 0 386 123" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -145,20 +145,20 @@ export function Features() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-14 space-y-2 text-center">
-                                    <h2 className="text-lg font-medium transition">Faster iteration cycles</h2>
-                                    <p className="text-foreground">Inspect, join, transform, and preview data directly in the flow so model experiments move from idea to run in minutes.</p>
+                                    <h2 className="text-lg font-medium transition">Capacity Planning</h2>
+                                    <p className="text-foreground">Right-size compute, storage, and network budget before you commit by modeling real traffic curves and growth scenarios.</p>
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden lg:col-span-3">
+                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden lg:col-span-3 bg-black">
                             <CardContent className="grid pt-6 sm:grid-cols-2">
                                 <div className="relative z-10 flex flex-col justify-between space-y-12 lg:space-y-6">
                                     <div className="relative flex aspect-square size-12 rounded-full border before:absolute before:-inset-2 before:rounded-full before:border dark:border-white/10 dark:before:border-white/5">
                                         <Shield className="m-auto size-5" strokeWidth={1} />
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="group-hover:text-secondary-950 text-lg font-medium text-zinc-800 transition dark:text-white">Graph-native pipelines</h2>
-                                        <p className="text-foreground">Compose dataset, transform, and lifecycle nodes on a single infinite canvas, then compile to production-ready code.</p>
+                                        <h2 className="group-hover:text-secondary-950 text-lg font-medium text-zinc-800 transition dark:text-white">Scalability Patterns</h2>
+                                        <p className="text-foreground">Apply proven primitives from sharding to event sourcing without rewrite risk, then validate bottlenecks under simulated load.</p>
                                     </div>
                                 </div>
                                 <div className="relative -mb-6 -mr-6 mt-6 h-fit rounded-tl-lg border-l border-t p-6 py-6 sm:ml-6">
@@ -190,15 +190,15 @@ export function Features() {
                                 </div>
                             </CardContent>
                         </Card>
-                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden lg:col-span-3">
+                        <Card ref={addToCardsRef} className="relative col-span-full overflow-hidden lg:col-span-3 bg-black">
                             <CardContent className="grid h-full pt-6 sm:grid-cols-2">
                                 <div className="relative z-10 flex flex-col justify-between space-y-12 lg:space-y-6">
                                     <div className="relative flex aspect-square size-12 rounded-full border before:absolute before:-inset-2 before:rounded-full before:border dark:border-white/10 dark:before:border-white/5">
                                         <Users className="m-auto size-6" strokeWidth={1} />
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="text-lg font-medium transition">Collaborative by design</h2>
-                                        <p className="text-foreground">Share graph intent across engineering, data science, and product teams with visual steps everyone can review.</p>
+                                        <h2 className="text-lg font-medium transition">System Tradeoffs</h2>
+                                        <p className="text-foreground">Visualize CAP theorem, latency versus consistency, and cost tradeoffs with your team in a single shared diagram.</p>
                                     </div>
                                 </div>
                                 <div className="relative mt-6 before:absolute before:inset-0 before:mx-auto before:w-px before:bg-border sm:-my-6 sm:-mr-6">
