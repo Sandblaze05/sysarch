@@ -54,6 +54,14 @@ export enum PortDirection {
     OUTPUT = "output",
 }
 
+export enum SimulationStatus {
+    IDLE = "idle",
+    RUNNING = "running",
+    PAUSED = "paused",
+    FINISHED = "finished",
+    ERROR = "error",
+}
+
 interface PortDefinition {
     id: string
     label: string
@@ -89,15 +97,13 @@ export interface ConfigField {
 
 export interface SimulationEvent {
     id: string
-
     type: EventType
-
     source: string
-    target?: string
-
+    target: string
+    targetPort?: string
     payload: unknown
-
-    timestamp: number
+    correlationId: string
+    tick: number
 }
 
 export interface ValidationError {
@@ -139,12 +145,47 @@ export interface NodeDefinition {
     config: ConfigField[]
 
     simulate(
-        node: NodeInstance,
+        node: RuntimeNode,
         event: SimulationEvent,
         context: SimulationContext
-    ): SimulationEvent[]
+    ): EventResult[]
 
     validate(node: NodeInstance): ValidationError[]
 }
 
+export interface RuntimeEdge {
+    source: string
+    sourceHandle: string | null
 
+    target: string
+    targetHandle: string | null
+}
+
+export interface RuntimeNode {
+    instance: NodeInstance
+
+    definition: NodeDefinition
+
+    state: Record<string, unknown>
+}
+
+export interface RuntimeGraph {
+    nodes: Map<string, RuntimeNode>
+
+    outgoing: Map<string, string[]>
+
+    incoming: Map<string, string[]>
+}
+
+export interface EventResult {
+    type: EventType
+    outputPort: string
+    payload?: unknown
+    delayMs?: number
+}
+
+export interface GraphEdge {
+    source: string
+
+    target: string
+}

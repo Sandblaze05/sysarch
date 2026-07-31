@@ -38,7 +38,6 @@ class NodeRegistry {
      *     target input port accepts.
      *   - OR either side has no event constraints declared (permissive fallback).
      *
-     * A connection is always invalid when source === target (self-loop).
      */
     canConnect(
         sourceNodeType: string,
@@ -46,8 +45,6 @@ class NodeRegistry {
         targetNodeType: string,
         targetHandleId: string | null,
     ): boolean {
-        // Prevent self-loops
-        if (sourceNodeType === targetNodeType) return false;
 
         const sourceDef = this.definitions.get(sourceNodeType);
         const targetDef = this.definitions.get(targetNodeType);

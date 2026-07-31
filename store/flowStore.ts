@@ -63,13 +63,16 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         }),
     
     onConnect: (connection) => {
-        const { nodes } = get();
+        if (connection.source === connection.target) return;
+
+        const { nodes, edges } = get();
 
         const sourceNode = nodes.find((n) => n.id === connection.source);
         const targetNode = nodes.find((n) => n.id === connection.target);
 
         const sourceType = (sourceNode?.data?.type as string) || sourceNode?.type || '';
         const targetType = (targetNode?.data?.type as string) || targetNode?.type || '';
+
 
         const valid = nodeRegistry.canConnect(
             sourceType,
@@ -80,7 +83,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
         if (!valid) return;
 
-        set({ edges: addEdge(connection, get().edges) });
+        set({ edges: addEdge(connection, edges) });
     },
 
     addNode: (nodeType, position) => {
