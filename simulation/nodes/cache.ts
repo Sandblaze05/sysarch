@@ -63,8 +63,14 @@ export const cacheNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.CACHE_READ) {
+            return [{ type: EventType.CACHE_HIT, outputPort: "out", payload: event.payload }];
+        }
+        if (event.type === EventType.CACHE_WRITE) {
+            return [{ type: EventType.CACHE_HIT, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {

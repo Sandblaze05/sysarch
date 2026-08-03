@@ -95,7 +95,18 @@ export interface ConfigField {
     max?: number
 }
 
-export interface SimulationEvent {
+export interface RuntimeState {
+    [key: string]: unknown
+}
+
+export interface EventIntent {
+    type: EventType
+    payload: unknown
+    outputPort?: string
+    delayTicks?: number
+}
+
+export interface RoutedEvent {
     id: string
     type: EventType
     source: string
@@ -104,6 +115,14 @@ export interface SimulationEvent {
     payload: unknown
     correlationId: string
     tick: number
+}
+
+export interface TimelineEntry {
+    tick: number
+    nodeId: string
+    event: RoutedEvent
+    outputs: EventIntent[]
+    status: 'processed' | 'skipped' | 'error'
 }
 
 export interface ValidationError {
@@ -117,7 +136,7 @@ export interface ValidationError {
 export interface SimulationContext {
     currentTick: number
 
-    emit(event: SimulationEvent): void
+    emit(event: EventIntent): void
 
     log(message: string): void
 }
@@ -146,9 +165,10 @@ export interface NodeDefinition {
 
     simulate(
         node: RuntimeNode,
-        event: SimulationEvent,
-        context: SimulationContext
-    ): EventResult[]
+        event: RoutedEvent,
+        context: SimulationContext,
+        state: RuntimeState
+    ): EventIntent[]
 
     validate(node: NodeInstance): ValidationError[]
 }
@@ -166,22 +186,26 @@ export interface RuntimeNode {
 
     definition: NodeDefinition
 
-    state: Record<string, unknown>
+    state: RuntimeState
+
+    process(event: RoutedEvent, context: SimulationContext): EventIntent[]
 }
 
 export interface RuntimeGraph {
     nodes: Map<string, RuntimeNode>
 
-    outgoing: Map<string, string[]>
+    outgoing: Map<string, RuntimeEdge[]>
 
-    incoming: Map<string, string[]>
+    incoming: Map<string, RuntimeEdge[]>
+
+    route(sourceId: string, intents: EventIntent[], currentTick: number, correlationId: string): RoutedEvent[]
 }
 
 export interface EventResult {
     type: EventType
     outputPort: string
     payload?: unknown
-    delayMs?: number
+    delayTicks?: number
 }
 
 export interface GraphEdge {

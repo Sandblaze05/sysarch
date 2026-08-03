@@ -47,7 +47,7 @@ export const monitorNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
+    simulate(node, event, context, state) {
         return [];
     },
 

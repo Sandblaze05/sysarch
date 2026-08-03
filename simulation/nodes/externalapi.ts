@@ -55,8 +55,11 @@ export const externalApiNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.EXTERNAL_REQUEST) {
+            return [{ type: EventType.EXTERNAL_RESPONSE, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {

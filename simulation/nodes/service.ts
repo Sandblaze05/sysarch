@@ -63,8 +63,14 @@ export const serviceNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.HTTP_REQUEST) {
+            return [{ type: EventType.DATABASE_READ, outputPort: "out", payload: event.payload }];
+        }
+        if (event.type === EventType.DATABASE_RESPONSE) {
+            return [{ type: EventType.HTTP_RESPONSE, outputPort: "out", payload: event.payload }];
+        }
+        return [{ type: EventType.HTTP_RESPONSE, outputPort: "out", payload: event.payload }];
     },
 
     validate(node) {

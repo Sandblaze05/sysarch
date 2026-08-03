@@ -54,8 +54,13 @@ export const clientNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        // placeholder for now
+    simulate(node, event, context, state) {
+        if (event.type === EventType.HTTP_REQUEST && event.source === 'user') {
+            return [{ type: EventType.HTTP_REQUEST, outputPort: "http", payload: event.payload }];
+        }
+        if (event.type === EventType.HTTP_RESPONSE) {
+            return [];
+        }
         return [];
     },
 

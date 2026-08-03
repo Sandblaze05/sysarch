@@ -1,12 +1,10 @@
-import { SimulationEvent } from "@/types/node";
+import { RoutedEvent } from "@/types/node";
 
 export class EventQueue {
-    private queue: SimulationEvent[] = [];
+    private queue: RoutedEvent[] = [];
 
-    push(event: SimulationEvent) {
-        // Find the first event with a later tick
+    push(event: RoutedEvent) {
         const index = this.queue.findIndex(e => e.tick > event.tick);
-
         if (index === -1) {
             this.queue.push(event);
         } else {
@@ -14,19 +12,19 @@ export class EventQueue {
         }
     }
 
-    pop() {
+    pop(): RoutedEvent | undefined {
         return this.queue.shift();
     }
 
-    peek() {
+    peek(): RoutedEvent | undefined {
         return this.queue[0];
     }
 
-    size() {
+    size(): number {
         return this.queue.length;
     }
 
-    isEmpty() {
+    isEmpty(): boolean {
         return this.size() === 0;
     }
 

@@ -1,13 +1,16 @@
 import {
     NodeDefinition,
-    NodeInstance
+    NodeInstance,
+    RoutedEvent,
+    SimulationContext,
+    EventIntent,
+    RuntimeState,
 } from '@/types/node';
 
 export class RuntimeNode {
     readonly instance: NodeInstance;
     readonly definition: NodeDefinition;
-
-    state: Record<string, unknown>;
+    state: RuntimeState;
 
     constructor(
         instance: NodeInstance,
@@ -15,7 +18,10 @@ export class RuntimeNode {
     ) {
         this.instance = instance;
         this.definition = definition;
-
         this.state = {};
+    }
+
+    process(event: RoutedEvent, context: SimulationContext): EventIntent[] {
+        return this.definition.simulate(this, event, context, this.state);
     }
 }

@@ -63,8 +63,11 @@ export const databaseNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.DATABASE_READ || event.type === EventType.DATABASE_WRITE) {
+            return [{ type: EventType.DATABASE_RESPONSE, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {

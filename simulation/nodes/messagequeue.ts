@@ -56,8 +56,11 @@ export const messageQueueNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.QUEUE_PUBLISH) {
+            return [{ type: EventType.QUEUE_CONSUME, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {

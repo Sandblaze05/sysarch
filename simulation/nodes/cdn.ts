@@ -56,8 +56,11 @@ export const cdnNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.FILE_DOWNLOAD) {
+            return [{ type: EventType.FILE_DOWNLOAD, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {

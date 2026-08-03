@@ -56,8 +56,11 @@ export const workerNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.QUEUE_CONSUME) {
+            return [{ type: EventType.DATABASE_WRITE, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {

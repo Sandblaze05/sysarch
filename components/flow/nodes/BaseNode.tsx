@@ -11,6 +11,7 @@ export interface BaseNodeData {
   status?: 'idle' | 'running' | 'success' | 'error' | 'warning' | string;
   statusMessage?: string;
   config?: Record<string, unknown>;
+  isActive?: boolean;
   [key: string]: unknown;
 }
 
@@ -39,6 +40,7 @@ export const BaseNode: React.FC<NodeProps> = ({ id, type, data, selected }) => {
   const label = nodeData.label || definition?.label || nodeType;
   const Icon = definition?.icon;
   const categoryStyle = (definition?.category && CATEGORY_META[definition.category]) || DEFAULT_CATEGORY_META;
+  const isActive = nodeData.isActive === true;
 
   // Combine and position input and output handles
   const handles = useMemo(() => {
@@ -122,6 +124,8 @@ export const BaseNode: React.FC<NodeProps> = ({ id, type, data, selected }) => {
         categoryStyle.border
       } ${
         selected ? 'ring-2 ring-sky-400 border-sky-400' : ''
+      } ${
+        isActive ? 'animate-pulse ring-2 ring-emerald-400/60 shadow-[0_0_20px_rgba(52,211,153,0.3)]' : ''
       }`}
     >
       {/* Handles */}

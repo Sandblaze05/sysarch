@@ -73,8 +73,11 @@ export const apiGatewayNode: NodeDefinition = {
         },
     ],
 
-    simulate(node, event, context) {
-        return [event];
+    simulate(node, event, context, state) {
+        if (event.type === EventType.HTTP_REQUEST) {
+            return [{ type: EventType.HTTP_REQUEST, outputPort: "out", payload: event.payload }];
+        }
+        return [];
     },
 
     validate(node) {
