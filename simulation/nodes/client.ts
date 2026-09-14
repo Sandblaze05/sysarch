@@ -55,12 +55,21 @@ export const clientNode: NodeDefinition = {
     ],
 
     simulate(node, event, context, state) {
-        if (event.type === EventType.HTTP_REQUEST && event.source === 'user') {
+        state.requestsSent = (state.requestsSent || 0) as number;
+        state.responsesReceived = (state.responsesReceived || 0) as number;
+        
+        if (event.type === EventType.HTTP_REQUEST) {
+            state.requestsSent = (state.requestsSent as number) + 1;
+            context.metrics.record(node.instance.id, 'requestsSent', state.requestsSent as number);
             return [{ type: EventType.HTTP_REQUEST, outputPort: "http", payload: event.payload }];
         }
+        
         if (event.type === EventType.HTTP_RESPONSE) {
-            return [];
+            state.responsesReceived = (state.responsesReceived as number) + 1;
+            context.metrics.record(node.instance.id, 'responsesReceived', state.responsesReceived as number);
+            context.log('Client received response');
         }
+        
         return [];
     },
 

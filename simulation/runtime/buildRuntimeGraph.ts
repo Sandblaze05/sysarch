@@ -32,11 +32,21 @@ export function buildRuntimeGraph (
 
     for (const edge of edges) {
         graph.addEdge({
+            id: edge.id,
             source: edge.source,
             sourceHandle: edge.sourceHandle ?? null,
             target: edge.target,
             targetHandle: edge.targetHandle ?? null,
         });
+
+        if (edge.data?.bidirectional === true) {
+            graph.addEdge({
+                source: edge.target,
+                sourceHandle: edge.targetHandle ?? null,
+                target: edge.source,
+                targetHandle: edge.sourceHandle ?? null,
+            });
+        }
     }
 
     return graph;

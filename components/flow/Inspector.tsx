@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useMemo, useState } from 'react';
 import gsap from 'gsap';
 import { useFlowStore } from '@/store/flowStore';
 import { nodeRegistry } from '@/registry';
-import { ConfigField, SimulationStatus } from '@/types/node';
+import { ConfigField, SimulationStatus, NodeMetrics, EventType } from '@/types/node';
 import { CATEGORY_META, DEFAULT_CATEGORY_META } from '@/constants/categoryMeta';
 import {
   Sliders,
@@ -15,7 +15,6 @@ import {
   Check,
   Activity,
 } from 'lucide-react';
-
 
 const formatLabel = (str: string) => {
   return str
@@ -35,6 +34,9 @@ const Inspector: React.FC = () => {
   const simulationStatus = useFlowStore((state) => state.simulationStatus);
   const simulationTimeline = useFlowStore((state) => state.simulationTimeline);
   const activeNodeId = useFlowStore((state) => state.activeNodeId);
+  const nodeMetrics = useFlowStore((state) => state.nodeMetrics);
+  const nodeStatuses = useFlowStore((state) => state.nodeStatuses);
+  const engineInstance = useFlowStore((state) => state.engineInstance);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('config');
@@ -67,12 +69,7 @@ const Inspector: React.FC = () => {
     return simulationTimeline.filter(e => e.nodeId === selectedNode.id).length;
   }, [simulationTimeline, selectedNode]);
 
-  const nodeStatus = useMemo(() => {
-    if (!selectedNode) return 'idle';
-    if (activeNodeId === selectedNode.id && simulationStatus === SimulationStatus.RUNNING) return 'processing';
-    if (simulationStatus === SimulationStatus.FINISHED) return 'finished';
-    return 'waiting';
-  }, [activeNodeId, simulationStatus, selectedNode]);
+  const nodeStatus = selectedNode ? (nodeStatuses[selectedNode.id] || 'idle') : 'idle';
 
   const lastEventType = useMemo(() => {
     if (!selectedNode) return null;
@@ -115,8 +112,6 @@ const Inspector: React.FC = () => {
     setSelectedNodeId(null);
   };
 
-  if (!selectedNode && !panelRef.current) return null;
-
   const categoryStyle =
     (definition?.category && CATEGORY_META[definition.category]) || DEFAULT_CATEGORY_META;
 
@@ -131,7 +126,7 @@ const Inspector: React.FC = () => {
     <div
       ref={panelRef}
     style={{ transform: 'translateX(320px)', opacity: 0, pointerEvents: 'none' }}
-    className="fixed right-4 top-1/2 bottom-48 w-72 translate-y-[-50%] h-100 overflow-y-auto z-50 border-2 border-white/20 bg-black/80 backdrop-blur-xl rounded-3xl flex flex-col shadow-2xl text-white select-none transition-shadow duration-300"
+    className="fixed right-4 top-1/2 bottom-50 w-72 translate-y-[-50%] h-[59vh] overflow-y-auto z-50 border-2 border-white/20 bg-black/80 backdrop-blur-xl rounded-3xl flex flex-col shadow-2xl text-white select-none transition-shadow duration-300"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-0 px-4 pt-4 shrink-0">
@@ -314,41 +309,92 @@ const Inspector: React.FC = () => {
               <span>Runtime State</span>
             </div>
 
-            <div className="space-y-3">
-              <div className="bg-neutral-900/60 p-3 rounded-xl border border-white/5">
-                <div className="text-[10px] font-mono text-neutral-500 mb-1">Status</div>
-                <div className={`text-sm font-mono font-semibold ${
-                  nodeStatus === 'processing' ? 'text-amber-400' :
-                  nodeStatus === 'finished' ? 'text-emerald-400' :
-                  nodeStatus === 'waiting' ? 'text-sky-400' :
-                  'text-neutral-400'
-                }`}>
-                  {nodeStatus.charAt(0).toUpperCase() + nodeStatus.slice(1)}
+            {/* Status Section */}
+            <div className="bg-neutral-900/60 p-3 rounded-xl border border-white/5 flex items-center justify-between">
+              <div className="text-[10px] font-mono text-neutral-500">Status</div>
+              <div className="flex items-center gap-1.5 text-xs font-mono font-semibold">
+                {nodeStatus === 'processing' && (
+                  <><div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /><span className="text-emerald-400">Processing</span></>
+                )}
+                {nodeStatus === 'error' && (
+                  <><div className="w-2 h-2 rounded-full bg-red-400" /><span className="text-red-400">Error</span></>
+                )}
+                {nodeStatus === 'success' && (
+                  <><div className="w-2 h-2 rounded-full bg-green-400" /><span className="text-green-400">Completed</span></>
+                )}
+                {nodeStatus === 'idle' && (
+                  <><div className="w-2 h-2 rounded-full bg-neutral-400" /><span className="text-neutral-400">Idle</span></>
+                )}
+              </div>
+            </div>
+
+            {/* Metrics Panel */}
+            {selectedNode && nodeMetrics[selectedNode.id] && Object.keys(nodeMetrics[selectedNode.id]).length > 0 && (
+              <div className="space-y-2">
+                <div className="text-[10px] font-mono text-neutral-500">Metrics</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(nodeMetrics[selectedNode.id]).map(([key, value]) => {
+                    const lowerKey = key.toLowerCase();
+                    const isPercentage = lowerKey.includes('rate') || lowerKey.includes('utilization') || lowerKey.includes('ratio');
+                    const isInteger = lowerKey.includes('count') || Number.isInteger(value as number);
+                    const formattedValue = isPercentage
+                      ? `${((value as number) * 100).toFixed(1)}%`
+                      : isInteger
+                      ? Math.round(value as number).toString()
+                      : (value as number).toFixed(1);
+                    return (
+                      <div key={key} className="bg-white/5 rounded-lg p-2 border border-white/5 flex flex-col gap-1">
+                        <div className="text-[9px] font-mono text-neutral-400 truncate" title={formatLabel(key)}>{formatLabel(key)}</div>
+                        <div className="text-xs font-mono font-semibold text-neutral-200">{formattedValue}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              <div className="bg-neutral-900/60 p-3 rounded-xl border border-white/5">
-                <div className="text-[10px] font-mono text-neutral-500 mb-1">Processed Events</div>
-                <div className="text-sm font-mono font-semibold text-neutral-200">
-                  {processedEvents}
-                </div>
+            {/* Event Log */}
+            <div className="space-y-2">
+              <div className="text-[10px] font-mono text-neutral-500">Recent Events</div>
+              <div className="max-h-48 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
+                {simulationTimeline
+                  .filter(e => e.nodeId === selectedNode?.id)
+                  .slice(-20)
+                  .map((entry, idx) => {
+                    const type = entry.event.type;
+                    let badgeColor = 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20';
+                    if (type.includes('http')) badgeColor = 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20';
+                    else if (type.includes('cache')) badgeColor = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
+                    else if (type.includes('database')) badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+                    else if (type.includes('queue')) badgeColor = 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20';
+                    else if (type.includes('error')) badgeColor = 'bg-red-500/10 text-red-400 border-red-500/20';
+
+                    return (
+                      <div key={idx} className="flex items-center gap-2 p-1.5 rounded-lg bg-neutral-900/60 border border-white/5 text-[10px] font-mono">
+                        <div className="text-neutral-500 w-8">T{entry.tick}</div>
+                        <div className={`px-1.5 py-0.5 rounded border truncate flex-1 ${badgeColor}`}>
+                          {type.replace(/_/g, ' ')}
+                        </div>
+                        <div className="text-neutral-400 w-4 text-center">
+                          {entry.status === 'processed' ? '✓' : entry.status === 'skipped' ? '⊘' : '✗'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                {simulationTimeline.filter(e => e.nodeId === selectedNode?.id).length === 0 && (
+                  <div className="text-[10px] font-mono text-neutral-500 text-center py-2">No events processed</div>
+                )}
               </div>
+            </div>
 
-              {lastEventType && (
-                <div className="bg-neutral-900/60 p-3 rounded-xl border border-white/5">
-                  <div className="text-[10px] font-mono text-neutral-500 mb-1">Last Event</div>
-                  <div className="text-sm font-mono font-semibold text-neutral-200">
-                    {lastEventType}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-neutral-900/60 p-3 rounded-xl border border-white/5">
-                <div className="text-[10px] font-mono text-neutral-500 mb-1">Node ID</div>
-                <div className="text-[11px] font-mono text-neutral-400 break-all">
-                  {selectedNode?.id}
-                </div>
-              </div>
+            {/* State Viewer */}
+            <div className="space-y-2">
+              <div className="text-[10px] font-mono text-neutral-500">Internal State</div>
+              <pre className="text-[10px] font-mono text-neutral-400 bg-black/30 rounded p-2 overflow-auto max-h-32 border border-white/5 scrollbar-thin scrollbar-thumb-neutral-700">
+                {selectedNode && engineInstance
+                  ? JSON.stringify(engineInstance.graph.getNode(selectedNode.id)?.state || {}, null, 2)
+                  : '{}'}
+              </pre>
             </div>
           </div>
         )}

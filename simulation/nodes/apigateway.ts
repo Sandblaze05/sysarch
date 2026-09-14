@@ -74,9 +74,39 @@ export const apiGatewayNode: NodeDefinition = {
     ],
 
     simulate(node, event, context, state) {
+        state.requestCount = (state.requestCount || 0) as number;
+        state.windowStart = (state.windowStart || context.currentTick) as number;
+
+        if (context.currentTick - (state.windowStart as number) >= 60 * 60) {
+            state.windowStart = context.currentTick;
+            state.requestCount = 0;
+        }
+
         if (event.type === EventType.HTTP_REQUEST) {
+            const rateLimiting = node.instance.config.rateLimiting;
+            const rateLimit = node.instance.config.rateLimit as number;
+            
+            if (rateLimiting && (state.requestCount as number) >= rateLimit) {
+                context.metrics.increment(node.instance.id, 'errorCount');
+                context.metrics.increment(node.instance.id, 'rateLimitHits');
+                context.log('Rate limit exceeded');
+                return [{ type: EventType.ERROR, outputPort: "out", payload: { status: 429, message: 'Rate limit exceeded' } }];
+            }
+
+            state.requestCount = (state.requestCount as number) + 1;
+            
+            const authEnabled = node.instance.config.authEnabled;
+            const correlationHash = Array.from(event.correlationId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+            if (authEnabled && correlationHash % 50 === 0) {
+                context.metrics.increment(node.instance.id, 'errorCount');
+                context.metrics.increment(node.instance.id, 'authFailures');
+                context.log('Authentication failed');
+                return [{ type: EventType.ERROR, outputPort: "out", payload: { status: 401, message: 'Authentication failed' } }];
+            }
+
             return [{ type: EventType.HTTP_REQUEST, outputPort: "out", payload: event.payload }];
         }
+        
         return [];
     },
 

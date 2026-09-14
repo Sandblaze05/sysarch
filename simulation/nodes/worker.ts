@@ -57,9 +57,34 @@ export const workerNode: NodeDefinition = {
     ],
 
     simulate(node, event, context, state) {
+        state.activeTasks = (state.activeTasks || 0) as number;
+        state.batch = (state.batch || []) as unknown[];
+        
+        const concurrency = node.instance.config.concurrency as number;
+        const batchSize = node.instance.config.batchSize as number;
+
         if (event.type === EventType.QUEUE_CONSUME) {
-            return [{ type: EventType.DATABASE_WRITE, outputPort: "out", payload: event.payload }];
+            if ((state.activeTasks as number) >= concurrency) {
+                (state.batch as unknown[]).push(event.payload);
+                return [{ type: EventType.DATABASE_WRITE, outputPort: "out", payload: event.payload, delayTicks: 5 }];
+            } else {
+                state.activeTasks = (state.activeTasks as number) + 1;
+                context.metrics.increment(node.instance.id, 'processedCount');
+                
+                if ((state.batch as unknown[]).length >= batchSize) {
+                    const batchPayload = [...(state.batch as unknown[])];
+                    state.batch = [];
+                    state.activeTasks = (state.activeTasks as number) - 1;
+                    return [{ type: EventType.DATABASE_WRITE, outputPort: "out", payload: batchPayload }];
+                }
+                
+                return [{ type: EventType.DATABASE_WRITE, outputPort: "out", payload: event.payload }];
+            }
         }
+        
+        context.metrics.record(node.instance.id, 'activeTasks', state.activeTasks as number);
+        context.metrics.record(node.instance.id, 'batchSize', (state.batch as unknown[]).length);
+        
         return [];
     },
 

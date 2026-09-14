@@ -17,6 +17,9 @@ import {
     SimulationStatus,
     RoutedEvent,
     TimelineEntry,
+    ActiveEdgeEvent,
+    NodeMetrics,
+    NodeSimStatus,
 } from '@/types/node'
 
 interface FlowState {
@@ -24,12 +27,17 @@ interface FlowState {
     edges: Edge[]
     selectedNodeId: string | null
     simulationStatus: SimulationStatus
+    simulationTick: number
     simulationLogs: string[]
     simulationTimeline: TimelineEntry[]
     activeNodeId: string | null
     activeEdge: { source: string; target: string } | null
     simulationPaused: boolean
     engineInstance: Engine | null
+    activeEdges: ActiveEdgeEvent[]
+    playbackSpeed: number
+    nodeMetrics: Record<string, NodeMetrics>
+    nodeStatuses: Record<string, NodeSimStatus>
 
     setNodes: (nodes: Node[]) => void
     setEdges: (edges: Edge[]) => void
@@ -46,8 +54,11 @@ interface FlowState {
     pauseSimulation: () => void
     resumeSimulation: () => void
     resetSimulation: () => void
+    inspectPreviousTick: () => void
+    inspectNextTick: () => void
     setActiveNodeId: (id: string | null) => void
     setActiveEdge: (edge: { source: string; target: string } | null) => void
+    setPlaybackSpeed: (speed: number) => void
 }
 
 const buildInitialEvents = (nodes: Node[], edges: Edge[]): RoutedEvent[] => {
@@ -84,16 +95,22 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     edges: [],
     selectedNodeId: null,
     simulationStatus: SimulationStatus.IDLE,
+    simulationTick: 0,
     simulationLogs: [],
     simulationTimeline: [],
     activeNodeId: null,
     activeEdge: null,
     simulationPaused: false,
     engineInstance: null,
+    activeEdges: [],
+    playbackSpeed: 1,
+    nodeMetrics: {},
+    nodeStatuses: {},
 
     setNodes: (nodes) => set({ nodes }),
     setEdges: (edges) => set({ edges }),
     setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+    setPlaybackSpeed: (speed) => set({ playbackSpeed: speed }),
 
     onNodesChange: (changes) => {
         const nextNodes = applyNodeChanges(changes, get().nodes);
@@ -210,73 +227,101 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     },
 
     startSimulation: () => {
-        const { nodes, edges } = get();
+        const { nodes, edges, playbackSpeed } = get();
         if (nodes.length === 0) return;
 
-        const graph = buildRuntimeGraph(nodes, edges);
-        const engine = new Engine(graph, { maxSteps: 1000 });
+        const ticksPerSecond = playbackSpeed * 60;
+        const engine = new Engine(buildRuntimeGraph(nodes, edges), {
+            maxSteps: 10_000,
+            maxTicks: 600,
+            ticksPerSecond,
+        });
+        const processingNodes = new Map<string, number>();
 
         const syncFromEngine = (processedEvent: RoutedEvent | null) => {
-            const currentStatus = engine.status;
-            const { activeNodeId, activeEdge } = get();
+            const current = get();
+            const activeEdges = current.activeEdges.filter((edge) =>
+                engine.currentTick - edge.startTick <= edge.durationTicks
+            );
+            if (processedEvent) {
+                activeEdges.push({
+                    edgeKey: processedEvent.sourceEdgeId ?? `${processedEvent.source}->${processedEvent.target}`,
+                    eventType: processedEvent.type,
+                    correlationId: processedEvent.correlationId,
+                    startTick: engine.currentTick,
+                    durationTicks: 3,
+                });
+                processingNodes.set(processedEvent.target, engine.currentTick);
+            }
+
+            const nodeStatuses: Record<string, NodeSimStatus> = {};
+            for (const node of nodes) {
+                const startedAt = processingNodes.get(node.id);
+                if (startedAt !== undefined && engine.currentTick - startedAt <= 3) {
+                    nodeStatuses[node.id] = processedEvent?.type === EventType.ERROR ? 'error' : 'processing';
+                } else {
+                    nodeStatuses[node.id] = 'idle';
+                    processingNodes.delete(node.id);
+                }
+            }
 
             set({
-                simulationStatus: currentStatus,
+                simulationStatus: engine.status,
+                simulationTick: engine.currentTick,
                 simulationTimeline: [...engine.history],
                 simulationLogs: [...engine.logs],
-                simulationPaused: currentStatus === SimulationStatus.PAUSED,
-                activeNodeId: processedEvent ? processedEvent.target : currentStatus === SimulationStatus.FINISHED ? null : activeNodeId,
-                activeEdge: processedEvent ? { source: processedEvent.source, target: processedEvent.target } : currentStatus === SimulationStatus.FINISHED ? null : activeEdge,
-                engineInstance: currentStatus === SimulationStatus.IDLE || currentStatus === SimulationStatus.FINISHED ? null : engine,
+                simulationPaused: engine.status === SimulationStatus.PAUSED,
+                activeNodeId: processedEvent?.target ?? (engine.status === SimulationStatus.FINISHED ? null : current.activeNodeId),
+                activeEdge: processedEvent ? { source: processedEvent.source, target: processedEvent.target } : current.activeEdge,
+                engineInstance: engine.status === SimulationStatus.FINISHED ? null : engine,
+                nodeMetrics: engine.metrics.getAllNodeMetrics(),
+                activeEdges,
+                nodeStatuses,
             });
         };
 
         engine.start(buildInitialEvents(nodes, edges));
-
         set({
             engineInstance: engine,
             simulationStatus: SimulationStatus.RUNNING,
+            simulationTick: 0,
             simulationLogs: [],
             simulationTimeline: [],
             activeNodeId: null,
             activeEdge: null,
             simulationPaused: false,
+            nodeMetrics: {},
+            nodeStatuses: {},
+            activeEdges: [],
         });
-
-        void engine.play(60, syncFromEngine);
+        void engine.play(ticksPerSecond, syncFromEngine);
     },
 
     stepSimulation: () => {
         const engine = get().engineInstance;
         if (!engine) return;
-
         const result = engine.step();
         if (!result) {
-            set({
-                simulationStatus: SimulationStatus.FINISHED,
-                activeNodeId: null,
-                activeEdge: null,
-                engineInstance: null,
-            });
+            if (engine.status === SimulationStatus.PAUSED) {
+                set({ simulationStatus: SimulationStatus.PAUSED, simulationPaused: true });
+            } else {
+                set({ simulationStatus: SimulationStatus.FINISHED, activeNodeId: null, activeEdge: null, engineInstance: null });
+            }
             return;
         }
-
-        const status = engine.status;
         set({
-            simulationStatus: status,
+            simulationStatus: engine.status,
+            simulationPaused: engine.status === SimulationStatus.PAUSED,
+            simulationTick: engine.currentTick,
             simulationTimeline: [...engine.history],
             simulationLogs: [...engine.logs],
             activeNodeId: result.target,
             activeEdge: { source: result.source, target: result.target },
+            activeEdges: result.sourceEdgeId ? [{ edgeKey: result.sourceEdgeId, eventType: result.type, correlationId: result.correlationId, startTick: engine.currentTick, durationTicks: 3 }] : [],
+            nodeMetrics: engine.metrics.getAllNodeMetrics(),
+            nodeStatuses: { ...get().nodeStatuses, [result.target]: result.type === EventType.ERROR ? 'error' : 'processing' },
         });
-
-        if (status === SimulationStatus.FINISHED) {
-            set({
-                activeNodeId: null,
-                activeEdge: null,
-                engineInstance: null,
-            });
-        }
+        if (engine.status === SimulationStatus.FINISHED) set({ activeNodeId: null, activeEdge: null, engineInstance: null });
     },
 
     pauseSimulation: () => {
@@ -286,6 +331,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         engine.pause();
         set({
             simulationStatus: SimulationStatus.PAUSED,
+            simulationTick: engine.currentTick,
             simulationPaused: true,
         });
     },
@@ -294,27 +340,45 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         const engine = get().engineInstance;
         if (!engine) return;
 
+        const ticksPerSecond = get().playbackSpeed * 60;
+
         const syncFromEngine = (processedEvent: RoutedEvent | null) => {
             const currentStatus = engine.status;
-            const { activeNodeId, activeEdge } = get();
+            const { activeNodeId, activeEdge, activeEdges } = get();
+
+            const nextActiveEdges = activeEdges.filter((e) => engine.currentTick - e.startTick <= e.durationTicks);
+
+            if (processedEvent && processedEvent.source && processedEvent.target) {
+                nextActiveEdges.push({
+                    edgeKey: processedEvent.sourceEdgeId ?? `${processedEvent.source}->${processedEvent.target}`,
+                    eventType: processedEvent.type,
+                    correlationId: processedEvent.correlationId,
+                    startTick: engine.currentTick,
+                    durationTicks: 3,
+                });
+            }
 
             set({
                 simulationStatus: currentStatus,
+                simulationTick: engine.currentTick,
                 simulationTimeline: [...engine.history],
                 simulationLogs: [...engine.logs],
                 simulationPaused: currentStatus === SimulationStatus.PAUSED,
                 activeNodeId: processedEvent ? processedEvent.target : currentStatus === SimulationStatus.FINISHED ? null : activeNodeId,
                 activeEdge: processedEvent ? { source: processedEvent.source, target: processedEvent.target } : currentStatus === SimulationStatus.FINISHED ? null : activeEdge,
                 engineInstance: currentStatus === SimulationStatus.IDLE || currentStatus === SimulationStatus.FINISHED ? null : engine,
+                nodeMetrics: engine.metrics.getAllNodeMetrics(),
+                activeEdges: nextActiveEdges,
             });
         };
 
         set({
             simulationStatus: SimulationStatus.RUNNING,
+            simulationTick: engine.currentTick,
             simulationPaused: false,
         });
 
-        void engine.play(60, syncFromEngine);
+        void engine.play(ticksPerSecond, syncFromEngine);
     },
 
     resetSimulation: () => {
@@ -323,13 +387,39 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
         set({
             simulationStatus: SimulationStatus.IDLE,
+            simulationTick: 0,
             simulationLogs: [],
             simulationTimeline: [],
             activeNodeId: null,
             activeEdge: null,
             simulationPaused: false,
             engineInstance: null,
+            nodeMetrics: {},
+            nodeStatuses: {},
+            activeEdges: [],
         });
+    },
+
+    inspectPreviousTick: () => {
+        const { simulationTick, simulationTimeline } = get();
+        const previousTicks = Array.from(new Set(
+            simulationTimeline
+                .map((entry) => entry.tick)
+                .filter((tick) => tick < simulationTick)
+        )).sort((a, b) => b - a);
+        if (previousTicks.length === 0) return;
+        set({ simulationTick: previousTicks[0] });
+    },
+
+    inspectNextTick: () => {
+        const { simulationTick, simulationTimeline } = get();
+        const nextTick = Array.from(new Set(
+            simulationTimeline
+                .map((entry) => entry.tick)
+                .filter((tick) => tick > simulationTick)
+        )).sort((a, b) => a - b)[0];
+        if (nextTick === undefined) return;
+        set({ simulationTick: nextTick });
     },
 
     setActiveNodeId: (id) => set({ activeNodeId: id }),

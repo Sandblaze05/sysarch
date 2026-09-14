@@ -9,7 +9,7 @@ import { nodeRegistry } from "@/registry";
 import BaseNode, { BaseNodeData } from "@/components/flow/nodes/BaseNode";
 import '@xyflow/react/dist/style.css';
 import Inspector from "@/components/flow/Inspector";
-import { ChevronLeft, Play, Pause, StepForward, RotateCcw, Terminal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, StepForward, RotateCcw, Terminal } from "lucide-react";
 import Link from "next/link";
 import Timeline from "@/components/flow/Timeline";
 import AnimatedEdge from "@/components/flow/edges/AnimatedEdge";
@@ -52,6 +52,7 @@ function PlaygroundFlow() {
   const setSelectedNodeId = useFlowStore((state) => state.setSelectedNodeId);
   const updateNodeData = useFlowStore((state) => state.updateNodeData);
   const simulationStatus = useFlowStore((state) => state.simulationStatus);
+  const simulationTick = useFlowStore((state) => state.simulationTick);
   const simulationLogs = useFlowStore((state) => state.simulationLogs);
   const activeNodeId = useFlowStore((state) => state.activeNodeId);
   const simulationPaused = useFlowStore((state) => state.simulationPaused);
@@ -61,6 +62,11 @@ function PlaygroundFlow() {
   const pauseSimulation = useFlowStore((state) => state.pauseSimulation);
   const resumeSimulation = useFlowStore((state) => state.resumeSimulation);
   const resetSimulation = useFlowStore((state) => state.resetSimulation);
+  const inspectPreviousTick = useFlowStore((state) => state.inspectPreviousTick);
+  const inspectNextTick = useFlowStore((state) => state.inspectNextTick);
+  
+  const playbackSpeed = useFlowStore((state) => state.playbackSpeed);
+  const setPlaybackSpeed = useFlowStore((state) => state.setPlaybackSpeed);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -152,8 +158,77 @@ function PlaygroundFlow() {
   }, [activeNodeId, nodes, updateNodeData]);
 
   const isRunning = simulationStatus === SimulationStatus.RUNNING;
+  const isActiveSimulation = isRunning || simulationStatus === SimulationStatus.PAUSED;
   const isFinished = simulationStatus === SimulationStatus.FINISHED;
   const isIdle = simulationStatus === SimulationStatus.IDLE;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      const speeds = [0.25, 0.5, 1, 2, 5, 10];
+      const currentSpeedIdx = speeds.indexOf(playbackSpeed);
+
+      if (e.key === ' ') {
+        e.preventDefault();
+        if (isIdle) {
+          startSimulation();
+        } else if (isRunning) {
+          if (simulationPaused) {
+            resumeSimulation();
+          } else {
+            pauseSimulation();
+          }
+        }
+      } else if (!isIdle) {
+        if (e.key === 'ArrowLeft' && simulationPaused) {
+          e.preventDefault();
+          inspectPreviousTick();
+        } else if (e.key === 'ArrowRight' && simulationPaused) {
+          e.preventDefault();
+          inspectNextTick();
+        } else if (e.key === 'r') {
+          e.preventDefault();
+          resetSimulation();
+        } else if (e.key === '+' || e.key === '=') {
+          if (currentSpeedIdx >= 0 && currentSpeedIdx < speeds.length - 1) {
+            const newSpeed = speeds[currentSpeedIdx + 1];
+            setPlaybackSpeed(newSpeed);
+            if (!simulationPaused && isRunning) {
+              pauseSimulation();
+              setTimeout(() => resumeSimulation(), 0);
+            }
+          }
+        } else if (e.key === '-') {
+          if (currentSpeedIdx > 0) {
+            const newSpeed = speeds[currentSpeedIdx - 1];
+            setPlaybackSpeed(newSpeed);
+            if (!simulationPaused && isRunning) {
+              pauseSimulation();
+              setTimeout(() => resumeSimulation(), 0);
+            }
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isIdle,
+    isRunning,
+    simulationPaused,
+    startSimulation,
+    pauseSimulation,
+    resumeSimulation,
+    stepSimulation,
+    inspectPreviousTick,
+    inspectNextTick,
+    resetSimulation,
+    playbackSpeed,
+    setPlaybackSpeed,
+  ]);
 
   return (
     <div className="h-screen w-full relative overflow-hidden bg-neutral-950">
@@ -183,8 +258,30 @@ function PlaygroundFlow() {
           </button>
         )}
         
-        {isRunning && (
+        {isActiveSimulation && (
           <>
+            {simulationPaused && (
+              <>
+                <button
+                  type="button"
+                  onClick={inspectPreviousTick}
+                  aria-label="Inspect previous tick"
+                  title="Previous tick"
+                  className="p-1.5 rounded-full bg-neutral-500/10 border border-white/10 text-neutral-400 hover:text-white transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={inspectNextTick}
+                  aria-label="Inspect next tick"
+                  title="Next tick"
+                  className="p-1.5 rounded-full bg-neutral-500/10 border border-white/10 text-neutral-400 hover:text-white transition-colors"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={simulationPaused ? () => resumeSimulation() : () => pauseSimulation()}
@@ -234,10 +331,54 @@ function PlaygroundFlow() {
         }`}>
           {simulationStatus.toUpperCase()}
         </span>
+        <span className="text-xs font-mono tabular-nums text-neutral-500 border-l border-white/10 pl-2">
+          TICK {simulationTick}
+        </span>
+        
+        {/* Speed Controls */}
+        <div className="flex items-center ml-2 border-l border-white/10 pl-2 gap-1">
+            {[0.25, 0.5, 1, 2, 5, 10].map(speed => (
+                <button
+                    key={speed}
+                    onClick={() => {
+                        setPlaybackSpeed(speed);
+                        if (isRunning && !simulationPaused) {
+                            pauseSimulation();
+                            setTimeout(() => resumeSimulation(), 0);
+                        }
+                    }}
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-colors ${
+                        playbackSpeed === speed 
+                        ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' 
+                        : 'text-neutral-500 hover:text-neutral-300 hover:bg-white/5 border border-transparent'
+                    }`}
+                >
+                    {speed}x
+                </button>
+            ))}
+            <input 
+                type="number"
+                min="0.1"
+                max="100"
+                step="0.1"
+                value={playbackSpeed}
+                onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val) && val > 0) {
+                        setPlaybackSpeed(val);
+                        if (isRunning && !simulationPaused) {
+                            pauseSimulation();
+                            setTimeout(() => resumeSimulation(), 0);
+                        }
+                    }
+                }}
+                className="w-12 text-[10px] font-mono bg-black/50 border border-white/10 rounded px-1.5 py-0.5 text-neutral-300 ml-1 outline-none focus:border-sky-500/50"
+            />
+        </div>
       </div>
 
       {simulationLogs.length > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[600px] max-h-48 bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        <div className="fixed bottom-6 left-6 z-50 w-[400px] max-h-48 bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10 shrink-0">
             <Terminal className="w-3.5 h-3.5 text-neutral-400" />
             <span className="text-xs font-mono text-neutral-400 font-semibold tracking-wide">Console</span>

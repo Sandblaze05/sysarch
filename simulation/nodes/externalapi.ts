@@ -56,7 +56,38 @@ export const externalApiNode: NodeDefinition = {
     ],
 
     simulate(node, event, context, state) {
+        state.requestCount = (state.requestCount || 0) as number;
+        state.windowStart = (state.windowStart || context.currentTick) as number;
+
+        if (context.currentTick - (state.windowStart as number) >= 60 * 60) {
+            state.windowStart = context.currentTick;
+            state.requestCount = 0;
+        }
+
         if (event.type === EventType.EXTERNAL_REQUEST) {
+            const rateLimit = node.instance.config.rateLimit as number;
+            const timeout = node.instance.config.timeout as number;
+            
+            if ((state.requestCount as number) >= rateLimit) {
+                context.metrics.increment(node.instance.id, 'rateLimitHits');
+                return [{ type: EventType.ERROR, outputPort: "out", payload: { status: 429, message: 'Rate limit exceeded' } }];
+            }
+
+            state.requestCount = (state.requestCount as number) + 1;
+            context.metrics.increment(node.instance.id, 'requestCount');
+            
+            const correlationHash = Array.from(event.correlationId).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+            if (correlationHash % 20 === 0) {
+                context.metrics.increment(node.instance.id, 'errorCount');
+                context.metrics.increment(node.instance.id, 'failureCount');
+                return [{ type: EventType.ERROR, outputPort: "out", payload: { status: 500, message: 'External API error' } }];
+            }
+
+            if (timeout < 100) {
+                context.metrics.increment(node.instance.id, 'timeoutCount');
+                return [{ type: EventType.ERROR, outputPort: "out", payload: { status: 408, message: 'Timeout' } }];
+            }
+
             return [{ type: EventType.EXTERNAL_RESPONSE, outputPort: "out", payload: event.payload }];
         }
         return [];

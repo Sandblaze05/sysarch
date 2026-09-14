@@ -62,7 +62,7 @@ export enum SimulationStatus {
     ERROR = "error",
 }
 
-interface PortDefinition {
+export interface PortDefinition {
     id: string
     label: string
 
@@ -99,11 +99,43 @@ export interface RuntimeState {
     [key: string]: unknown
 }
 
+// ── Metrics ──────────────────────────────────────────────
+
+/** Lightweight handle nodes use inside simulate() to report metrics. */
+export interface MetricsContext {
+    /** Set a gauge value (e.g. connectionPoolUtilization = 0.67). */
+    record(nodeId: string, key: string, value: number): void
+    /** Increment a counter (e.g. requestCount += 1). */
+    increment(nodeId: string, key: string, delta?: number): void
+    recordEvent(): void
+}
+
+/** Snapshot of all metrics for a single node at a point in time. */
+export interface NodeMetrics {
+    [key: string]: number
+}
+
+/** A single data-point in a time-series. */
+export interface MetricsSample {
+    tick: number
+    value: number
+}
+
+// ── Events ───────────────────────────────────────────────
+
 export interface EventIntent {
     type: EventType
     payload: unknown
     outputPort?: string
     delayTicks?: number
+    /**
+     * `'broadcast'` (default) — send to ALL matching downstream edges.
+     * `'single'`   — send to exactly ONE downstream edge (chosen by
+     *                `targetEdgeIndex` or round-robin inside the router).
+     */
+    routing?: 'broadcast' | 'single'
+    /** When routing === 'single', index into the filtered edge list to use. */
+    targetEdgeIndex?: number
 }
 
 export interface RoutedEvent {
@@ -115,6 +147,8 @@ export interface RoutedEvent {
     payload: unknown
     correlationId: string
     tick: number
+    /** The edge (source→target handle key) this event travels on, for UI animation. */
+    sourceEdgeId?: string
 }
 
 export interface TimelineEntry {
@@ -139,6 +173,9 @@ export interface SimulationContext {
     emit(event: EventIntent): void
 
     log(message: string): void
+
+    /** Metrics reporting handle – available during simulation. */
+    metrics: MetricsContext
 }
 
 export interface NodeInstance {
@@ -174,6 +211,7 @@ export interface NodeDefinition {
 }
 
 export interface RuntimeEdge {
+    id?: string
     source: string
     sourceHandle: string | null
 
@@ -213,3 +251,15 @@ export interface GraphEdge {
 
     target: string
 }
+
+/** Per-edge animation state pushed to the UI. */
+export interface ActiveEdgeEvent {
+    edgeKey: string          // "sourceId->targetId" or React Flow edge id
+    eventType: EventType
+    correlationId: string
+    startTick: number
+    durationTicks: number
+}
+
+/** Status a node can display during simulation. */
+export type NodeSimStatus = 'idle' | 'processing' | 'success' | 'error'

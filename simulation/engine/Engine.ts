@@ -1,7 +1,9 @@
 import { RuntimeGraph } from "../runtime/RuntimeGraph";
 import { EventQueue } from "./EventQueue";
+import { MetricsCollector } from "./MetricsCollector";
 import {
     EventIntent,
+    EventType,
     RoutedEvent,
     SimulationContext,
     SimulationStatus,
@@ -10,10 +12,13 @@ import {
 
 export interface EngineOptions {
     maxSteps?: number;
+    maxTicks?: number;
+    ticksPerSecond?: number;
 }
 
 export class Engine {
     readonly graph: RuntimeGraph;
+    readonly metrics = new MetricsCollector();
 
     readonly queue = new EventQueue();
     readonly history: TimelineEntry[] = [];
@@ -23,28 +28,47 @@ export class Engine {
     status: SimulationStatus = SimulationStatus.IDLE;
 
     private readonly maxSteps: number;
+    private readonly maxTicks: number;
+    private readonly ticksPerSecond: number;
     private eventCounter = 0;
     private playbackToken = 0;
+    private readonly responseTargets = new Map<string, string>();
 
     constructor(graph: RuntimeGraph, options: EngineOptions = {}) {
         this.graph = graph;
         this.maxSteps = options.maxSteps ?? 10_000;
+        this.maxTicks = options.maxTicks ?? 600;
+        this.ticksPerSecond = options.ticksPerSecond ?? 60;
     }
 
     start(initialEvents: RoutedEvent[] = []) {
         this.reset();
 
+        this.metrics.reset();
         this.queue.clear();
         this.history.length = 0;
         this.logs.length = 0;
         this.currentTick = 0;
         this.status = SimulationStatus.RUNNING;
 
-        initialEvents.forEach((event) => this.enqueue(event));
+        this.responseTargets.clear();
+        initialEvents.forEach((event) => {
+            if (this.graph.getNode(event.target)?.instance.type === 'client') {
+                this.responseTargets.set(event.correlationId, event.target);
+            }
+            this.enqueue(event);
+        });
     }
 
     step() {
-        return this.tickOnce();
+        const wasPaused = this.status === SimulationStatus.PAUSED;
+        const processed = this.tickOnce(true);
+        if (wasPaused && processed) {
+            this.status = SimulationStatus.PAUSED;
+        } else if (this.status === SimulationStatus.FINISHED && processed) {
+            this.status = SimulationStatus.PAUSED;
+        }
+        return processed;
     }
 
     tick() {
@@ -101,11 +125,13 @@ export class Engine {
 
     reset() {
         this.pause();
+        this.metrics.reset();
         this.queue.clear();
         this.history.length = 0;
         this.logs.length = 0;
         this.currentTick = 0;
         this.eventCounter = 0;
+        this.responseTargets.clear();
         this.status = SimulationStatus.IDLE;
     }
 
@@ -133,6 +159,7 @@ export class Engine {
             queuedEvents: this.queue.size(),
             logs: [...this.logs],
             timeline: [...this.history],
+            metrics: this.metrics.getAllNodeMetrics(),
         };
     }
 
@@ -148,14 +175,14 @@ export class Engine {
         }
     }
 
-    private tickOnce() {
-        if (this.status !== SimulationStatus.RUNNING) {
+    private tickOnce(manual = false) {
+        if (this.status !== SimulationStatus.RUNNING && !(manual && this.status === SimulationStatus.PAUSED)) {
             return null;
         }
 
         const nextEvent = this.queue.pop();
         if (!nextEvent) {
-            this.status = SimulationStatus.FINISHED;
+            if (!manual) this.status = SimulationStatus.FINISHED;
             return null;
         }
 
@@ -180,33 +207,108 @@ export class Engine {
         }
 
         const { context, intents } = this.createContext(nextEvent);
-        const returnedIntents = targetNode.process(nextEvent, context);
-        const allIntents = [...returnedIntents, ...intents];
+        this.metrics.recordEvent();
+        let returnedIntents: EventIntent[] = [];
+        let eventStatus: 'processed' | 'error' = 'processed';
 
-        const routed = this.graph.route(
+        try {
+            returnedIntents = targetNode.process(nextEvent, context);
+        } catch (error) {
+            eventStatus = 'error';
+            this.log(`Node ${targetNode.instance.id} threw an error: ${error instanceof Error ? error.message : String(error)}`);
+        }
+
+        const allIntents = [...returnedIntents, ...intents];
+        if (nextEvent.type === EventType.ERROR || allIntents.some((intent) => intent.type === EventType.ERROR)) {
+            eventStatus = 'error';
+        }
+
+        if (eventStatus === 'error') {
+            this.metrics.increment(targetNode.instance.id, 'errorCount');
+        }
+
+        let routed = this.graph.route(
             targetNode.instance.id,
             allIntents,
             this.currentTick,
-            nextEvent.correlationId
+            nextEvent.correlationId,
+            this.ticksPerSecond
         );
+
+        if (routed.length === 0 && nextEvent.source !== 'user') {
+            const returnIntents = allIntents.filter((intent) =>
+                intent.type === EventType.HTTP_RESPONSE ||
+                intent.type === EventType.DATABASE_RESPONSE ||
+                intent.type === EventType.CACHE_HIT ||
+                intent.type === EventType.CACHE_MISS ||
+                intent.type === EventType.EXTERNAL_RESPONSE ||
+                intent.type === EventType.ERROR
+            );
+            routed = returnIntents.flatMap((intent) => this.graph.routeToSource(
+                nextEvent,
+                intent,
+                this.currentTick,
+                this.ticksPerSecond
+            ));
+
+            if (routed.length === 0) {
+                const responseTarget = this.responseTargets.get(nextEvent.correlationId);
+                if (responseTarget) {
+                    routed = returnIntents.flatMap((intent) => this.graph.routeToNode(
+                        targetNode.instance.id,
+                        responseTarget,
+                        intent,
+                        this.currentTick,
+                        nextEvent.correlationId,
+                        this.ticksPerSecond
+                    ));
+                }
+            }
+        }
 
         this.history.push({
             tick: this.currentTick,
             nodeId: targetNode.instance.id,
             event: nextEvent,
             outputs: allIntents,
-            status: 'processed',
+            status: eventStatus,
         });
 
         for (const routedEvent of routed) {
             this.enqueue(routedEvent);
         }
 
-        if (this.queue.isEmpty()) {
+        this.scheduleNextClientRequest(nextEvent, targetNode.instance.id);
+
+        if (this.queue.isEmpty() && !manual) {
             this.status = SimulationStatus.FINISHED;
         }
 
         return nextEvent;
+    }
+
+    private scheduleNextClientRequest(event: RoutedEvent, nodeId: string) {
+        const node = this.graph.getNode(nodeId);
+        if (!node || node.instance.type !== "client" || event.source !== "user") return;
+
+        const requestsPerSecond = Number(node.instance.config.requestsPerSecond) || 1;
+        const requestInterval = Math.max(
+            1,
+            Math.round(this.ticksPerSecond / requestsPerSecond)
+        );
+        const nextTick = this.currentTick + requestInterval;
+
+        if (nextTick > this.maxTicks) return;
+
+        this.enqueue({
+            id: this.createEventId(),
+            type: EventType.HTTP_REQUEST,
+            source: "user",
+            target: nodeId,
+            payload: event.payload,
+            correlationId: event.correlationId,
+            tick: nextTick,
+        });
     }
 
     private createContext(currentEvent: RoutedEvent): { context: SimulationContext; intents: EventIntent[] } {
@@ -219,6 +321,11 @@ export class Engine {
             log: (message) => {
                 this.log(message);
             },
+            metrics: {
+                record: (nodeId, key, value) => this.metrics.record(nodeId, key, value),
+                increment: (nodeId, key, delta) => this.metrics.increment(nodeId, key, delta),
+                recordEvent: () => this.metrics.recordEvent(),
+            }
         };
         return { context, intents };
     }
@@ -243,5 +350,9 @@ export class Engine {
 
     private log(message: string) {
         this.logs.push(message);
+    }
+
+    getMetrics() {
+        return this.metrics.getAllNodeMetrics();
     }
 }

@@ -192,7 +192,7 @@ const Panel = () => {
       <div className="flex-1 overflow-y-auto pr-1 space-y-3 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-transparent">
         {Object.keys(nodesByCategory).length === 0 ? (
           <div className="text-center py-6 text-neutral-500 text-xs font-mono">
-            No components match "{searchQuery}"
+            No components match &quot;{searchQuery}&quot;
           </div>
         ) : (
           (Object.entries(nodesByCategory) as [NodeCategory, NodeDefinition[]][]).map(

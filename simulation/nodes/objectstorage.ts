@@ -56,9 +56,30 @@ export const objectStorageNode: NodeDefinition = {
     ],
 
     simulate(node, event, context, state) {
-        if (event.type === EventType.FILE_UPLOAD || event.type === EventType.FILE_DOWNLOAD) {
+        state.objectCount = (state.objectCount || 0) as number;
+        state.totalSize = (state.totalSize || 0) as number;
+        state.versions = (state.versions || {}) as Record<string, number>;
+        
+        if (event.type === EventType.FILE_UPLOAD) {
+            state.objectCount = (state.objectCount as number) + 1;
+            state.totalSize = (state.totalSize as number) + 1024; // Simulated size
+            
+            if (node.instance.config.versioning) {
+                const key = JSON.stringify(event.payload || "file");
+                (state.versions as Record<string, number>)[key] = ((state.versions as Record<string, number>)[key] || 0) + 1;
+            }
+            
+            context.metrics.increment(node.instance.id, 'uploadCount');
+            context.metrics.record(node.instance.id, 'objectCount', state.objectCount as number);
+            
             return [{ type: EventType.FILE_DOWNLOAD, outputPort: "out", payload: event.payload }];
         }
+        
+        if (event.type === EventType.FILE_DOWNLOAD) {
+            context.metrics.increment(node.instance.id, 'downloadCount');
+            return [{ type: EventType.FILE_DOWNLOAD, outputPort: "out", payload: event.payload }];
+        }
+        
         return [];
     },
 

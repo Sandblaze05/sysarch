@@ -4,6 +4,8 @@ import { nodeRegistry } from '@/registry';
 import { PortDirection, PortSide } from '@/types/node';
 import { CATEGORY_META, DEFAULT_CATEGORY_META } from '@/constants/categoryMeta';
 import { AlertCircle, CheckCircle2, Loader2, Circle } from 'lucide-react';
+import { useFlowStore } from '@/store/flowStore';
+import { SimulationStatus, NodeCategory } from '@/types/node';
 
 export interface BaseNodeData {
   label?: string;
@@ -41,6 +43,13 @@ export const BaseNode: React.FC<NodeProps> = ({ id, type, data, selected }) => {
   const Icon = definition?.icon;
   const categoryStyle = (definition?.category && CATEGORY_META[definition.category]) || DEFAULT_CATEGORY_META;
   const isActive = nodeData.isActive === true;
+
+  const nodeMetricsMap = useFlowStore((state) => state.nodeMetrics);
+  const nodeStatusesMap = useFlowStore((state) => state.nodeStatuses);
+  const simulationStatus = useFlowStore((state) => state.simulationStatus);
+
+  const metrics = nodeMetricsMap[id] ?? {};
+  const simStatus = nodeStatusesMap[id] ?? 'idle';
 
   // Combine and position input and output handles
   const handles = useMemo(() => {
@@ -84,27 +93,29 @@ export const BaseNode: React.FC<NodeProps> = ({ id, type, data, selected }) => {
 
   // Render Status indicator
   const renderStatus = () => {
-    const status = nodeData.status || 'idle';
-    switch (status) {
-      case 'running':
+    switch (simStatus) {
+      case 'processing':
         return (
           <div title="Processing" className="flex items-center gap-1 text-xs text-amber-400 font-mono">
-            <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+            <Loader2 className="w-3 h-3 animate-spin text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
             <span>Processing</span>
           </div>
         );
       case 'success':
         return (
-          <div title="Healthy" className="flex items-center gap-1 text-xs text-emerald-400 font-mono">
+          <div title="Success" className="flex items-center gap-1 text-xs text-emerald-400 font-mono">
             <CheckCircle2 className="w-3 h-3 text-emerald-400" />
             <span>Active</span>
           </div>
         );
       case 'error':
         return (
-          <div title="Error" className="flex items-center gap-1 text-xs text-rose-400 font-mono">
+          <div title="Error" className="flex items-center gap-1 text-xs text-rose-400 font-mono relative">
             <AlertCircle className="w-3 h-3 text-rose-400 animate-pulse" />
             <span>Error</span>
+            {metrics.errorCount && metrics.errorCount > 0 ? (
+                <span className="absolute -top-1 -right-2 bg-rose-500 text-white text-[8px] px-1 rounded-full">{metrics.errorCount}</span>
+            ) : null}
           </div>
         );
       case 'idle':
@@ -175,6 +186,32 @@ export const BaseNode: React.FC<NodeProps> = ({ id, type, data, selected }) => {
           </span>
         )}
       </div>
+
+      {(simulationStatus === SimulationStatus.RUNNING || simulationStatus === SimulationStatus.PAUSED) && (
+        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-black/80 border border-white/10 text-[10px] font-mono text-neutral-400 whitespace-nowrap">
+          {(() => {
+            const cat = definition?.category;
+            if (cat === NodeCategory.CLIENT) return `${metrics.requestsSent ?? 0} sent`;
+            if (cat === NodeCategory.CACHE) {
+              return metrics.hitRate !== undefined 
+                ? `${Math.round(metrics.hitRate * 100)}% hits`
+                : `${metrics.hitCount ?? 0} hits`;
+            }
+            if (cat === NodeCategory.DATABASE) return `${metrics.activeConnections ?? 0}/${nodeData.config?.maxConnections ?? '?'} conn`;
+            if (cat === NodeCategory.MESSAGE_QUEUE) return `depth: ${metrics.queueDepth ?? 0}`;
+            if (cat === NodeCategory.SERVICE) {
+              return (
+                <>
+                  <span>{metrics.requestCount ?? 0} req</span>
+                  {(metrics.errorCount ?? 0) > 0 && <span className="ml-1 text-rose-400">{metrics.errorCount} err</span>}
+                </>
+              );
+            }
+            if (cat === NodeCategory.NETWORK) return `${metrics.requestCount ?? 0} req`;
+            return `${metrics.requestCount ?? 0} events`;
+          })()}
+        </div>
+      )}
     </div>
   );
 };
