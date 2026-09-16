@@ -15,6 +15,7 @@ import {
   Check,
   Activity,
 } from 'lucide-react';
+import type { DockState } from './Timeline';
 
 const formatLabel = (str: string) => {
   return str
@@ -25,7 +26,12 @@ const formatLabel = (str: string) => {
 
 type TabId = 'config' | 'runtime';
 
-const Inspector: React.FC = () => {
+type InspectorProps = {
+  dockState?: DockState;
+  onClose?: () => void;
+};
+
+const Inspector: React.FC<InspectorProps> = ({ dockState = 'closed', onClose }) => {
   const nodes = useFlowStore((state) => state.nodes);
   const selectedNodeId = useFlowStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useFlowStore((state) => state.setSelectedNodeId);
@@ -82,7 +88,6 @@ const Inspector: React.FC = () => {
     if (!panelRef.current) return;
     if (selectedNode) {
       gsap.to(panelRef.current, {
-        x: 0,
         opacity: 1,
         pointerEvents: 'auto',
         duration: 0.45,
@@ -91,7 +96,6 @@ const Inspector: React.FC = () => {
       });
     } else {
       gsap.to(panelRef.current, {
-        x: 320,
         opacity: 0,
         pointerEvents: 'none',
         duration: 0.45,
@@ -110,6 +114,7 @@ const Inspector: React.FC = () => {
   const handleClose = () => {
     setNodes(useFlowStore.getState().nodes.map((n) => ({ ...n, selected: false })));
     setSelectedNodeId(null);
+    onClose?.();
   };
 
   const categoryStyle =
@@ -125,8 +130,8 @@ const Inspector: React.FC = () => {
   return (
     <div
       ref={panelRef}
-    style={{ transform: 'translateX(320px)', opacity: 0, pointerEvents: 'none' }}
-    className="fixed right-4 top-1/2 bottom-50 w-72 translate-y-[-50%] h-[59vh] overflow-y-auto z-50 border-2 border-white/20 bg-black/80 backdrop-blur-xl rounded-3xl flex flex-col shadow-2xl text-white select-none transition-shadow duration-300"
+    style={{ opacity: selectedNode ? 1 : 0, pointerEvents: selectedNode ? 'auto' : 'none' }}
+    className="fixed right-4 top-4 bottom-[14rem] z-50 w-[min(340px,calc(100vw-4rem))] overflow-y-auto border-2 border-white/20 bg-black/80 backdrop-blur-xl rounded-3xl flex flex-col shadow-2xl text-white select-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-0 px-4 pt-4 shrink-0">

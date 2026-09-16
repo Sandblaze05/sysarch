@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useMemo, useEffect, useState } from "react";
 import Panel from "@/components/flow/Panel";
 
 import { ReactFlowProvider, ReactFlow, Background, useReactFlow, MiniMap, type IsValidConnection, type Node, type Rect } from "@xyflow/react";
@@ -9,7 +9,7 @@ import { nodeRegistry } from "@/registry";
 import BaseNode, { BaseNodeData } from "@/components/flow/nodes/BaseNode";
 import '@xyflow/react/dist/style.css';
 import Inspector from "@/components/flow/Inspector";
-import { ChevronLeft, ChevronRight, Play, Pause, StepForward, RotateCcw, Terminal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, StepForward, RotateCcw, Terminal, Code2, History, X, WandSparkles, Plus, Minus, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import Timeline from "@/components/flow/Timeline";
 import AnimatedEdge from "@/components/flow/edges/AnimatedEdge";
@@ -43,6 +43,8 @@ function getNodeBounds(
 }
 
 function PlaygroundFlow() {
+  const [activeDock, setActiveDock] = useState<'console' | 'timeline' | 'inspector' | null>(null);
+  const [showMinimap, setShowMinimap] = useState(true);
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
   const onNodesChange = useFlowStore((state) => state.onNodesChange);
@@ -67,6 +69,10 @@ function PlaygroundFlow() {
   
   const playbackSpeed = useFlowStore((state) => state.playbackSpeed);
   const setPlaybackSpeed = useFlowStore((state) => state.setPlaybackSpeed);
+
+  const toggleDock = useCallback((dock: 'console' | 'timeline' | 'inspector') => {
+    setActiveDock((current) => current === dock ? null : dock);
+  }, []);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -377,8 +383,7 @@ function PlaygroundFlow() {
         </div>
       </div>
 
-      {simulationLogs.length > 0 && (
-        <div className="fixed bottom-6 left-6 z-50 w-[400px] max-h-48 bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      {activeDock === 'console' && <div className="fixed right-4 top-4 bottom-[14rem] z-50 w-[min(340px,calc(100vw-4rem))] bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-white/10 shrink-0">
             <Terminal className="w-3.5 h-3.5 text-neutral-400" />
             <span className="text-xs font-mono text-neutral-400 font-semibold tracking-wide">Console</span>
@@ -391,11 +396,38 @@ function PlaygroundFlow() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+      </div>}
       <Panel />
-      <Inspector />
-      <Timeline />
+      {activeDock === 'inspector' && <Inspector dockState="open" onClose={() => setActiveDock(null)} />}
+      {activeDock === 'timeline' && <Timeline dockState="open" />}
+      {!activeDock && <div className="fixed right-0 top-2 z-[60] flex w-40 items-end flex-col gap-2">
+        {[
+          { id: 'console' as const, label: 'Console', icon: Code2 },
+          { id: 'timeline' as const, label: 'Timeline', icon: History },
+        ].map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            aria-label={label}
+            title={label}
+            onClick={() => toggleDock(id)}
+            className={`group flex h-14 w-16 translate-x-6 self-end items-center justify-start gap-3 overflow-hidden rounded-xl rounded-r-none border border-r-0 bg-black px-3 text-neutral-300 shadow-xl backdrop-blur-xl transition-[width,transform,background-color,border-color] duration-200 hover:w-40 hover:translate-x-0 hover:border-[#e1e0cc]/80 hover:bg-[#272521] ${activeDock === id ? 'border-[#e1e0cc] border-r-0 bg-black text-[#e1e0cc]' : 'border-[#e1e0cc]/70'}`}
+          >
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="whitespace-nowrap text-sm font-semibold opacity-0 transition-opacity duration-200 group-hover:opacity-100">{label}</span>
+          </button>
+        ))}
+      </div>}
+      {activeDock && activeDock !== 'inspector' && (
+        <button
+          type="button"
+          aria-label="Close panel"
+          onClick={() => setActiveDock(null)}
+          className="fixed right-6 top-7 z-[70] rounded-md p-1.5 text-neutral-400 hover:bg-white/10 hover:text-white"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -405,7 +437,10 @@ function PlaygroundFlow() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
-        onNodeClick={(_event, node) => setSelectedNodeId(node.id)}
+        onNodeClick={(_event, node) => {
+          setSelectedNodeId(node.id);
+          setActiveDock('inspector');
+        }}
         onPaneClick={() => setSelectedNodeId(null)}
         onDragOver={onDragOver}
         onDrop={onDrop}
@@ -416,8 +451,9 @@ function PlaygroundFlow() {
         fitView
       >
         <Background color="#333" gap={16} />
-        <MiniMap
+          {showMinimap && <MiniMap
           position="bottom-right"
+          style={{ right: 8, bottom: 52, zIndex: 80 }}
           nodeBorderRadius={8}
           nodeStrokeWidth={2}
           bgColor="#0a0a0a"
@@ -428,8 +464,46 @@ function PlaygroundFlow() {
           zoomable
           ariaLabel="Minimap"
           onNodeClick={handleMiniMapNodeClick}
-        />
+        />}
       </ReactFlow>
+      <div className="fixed right-4 bottom-4 z-[90] flex items-center gap-2">
+        <button
+          type="button"
+          aria-label="Fit canvas to view"
+          title="Fit canvas to view"
+          onClick={() => void reactFlow.fitView({ duration: 500, padding: 0.2 })}
+          className="flex h-10 w-11 items-center justify-center rounded-lg border border-[#e1e0cc]/80 bg-[#e1e0cc] text-neutral-900 transition-colors hover:bg-white"
+        >
+          <WandSparkles className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom in"
+          title="Zoom in"
+          onClick={() => void reactFlow.zoomIn({ duration: 250 })}
+          className="flex h-10 w-11 items-center justify-center rounded-lg border border-[#e1e0cc]/80 bg-black text-[#e1e0cc] transition-colors hover:bg-neutral-800"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Zoom out"
+          title="Zoom out"
+          onClick={() => void reactFlow.zoomOut({ duration: 250 })}
+          className="flex h-10 w-11 items-center justify-center rounded-lg border border-[#e1e0cc]/80 bg-black text-[#e1e0cc] transition-colors hover:bg-neutral-800"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label={showMinimap ? 'Hide minimap' : 'Show minimap'}
+          title={showMinimap ? 'Hide minimap' : 'Show minimap'}
+          onClick={() => setShowMinimap((visible) => !visible)}
+          className="flex h-10 w-11 items-center justify-center rounded-lg border border-[#e1e0cc]/80 bg-black text-[#e1e0cc] transition-colors hover:bg-neutral-800"
+        >
+          {showMinimap ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+        </button>
+      </div>
     </div>
   );
 }

@@ -13,7 +13,13 @@ const STATUS_COLORS: Record<string, string> = {
   error: 'text-rose-400',
 };
 
-const Timeline: React.FC = () => {
+export type DockState = 'closed' | 'preview' | 'open';
+
+type TimelineProps = {
+  dockState?: DockState;
+};
+
+const Timeline: React.FC<TimelineProps> = ({ dockState = 'open' }) => {
   const timeline = useFlowStore((state) => state.simulationTimeline);
   const nodes = useFlowStore((state) => state.nodes);
   const simulationStatus = useFlowStore((state) => state.simulationStatus);
@@ -97,7 +103,9 @@ const Timeline: React.FC = () => {
   }, [timeline]);
 
   return (
-    <div className="fixed bottom-6 left-1/2 translate-x-[-50%] z-50 w-[420px] max-h-[60vh] bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <div
+      className="fixed right-4 top-4 bottom-[14rem] z-50 w-[min(340px,calc(100vw-4rem))] bg-black/90 backdrop-blur-xl border border-white/15 rounded-2xl overflow-hidden flex flex-col shadow-2xl"
+    >
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/10 shrink-0">
         <div className="flex items-center gap-2">
           {isRunning && (
